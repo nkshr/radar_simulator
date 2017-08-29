@@ -30,3 +30,21 @@
 *.exe
 *.out
 *.app
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+.vs/
+#*.cmake
+#*.sln
+#*.vcxproj
+#*.filters
+#*.log
