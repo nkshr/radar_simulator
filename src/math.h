@@ -1,15 +1,17 @@
-﻿#include <complex>
+﻿#pragma once
+
+#include <complex>
 #include <iostream>
 #include <valarray>
 
-const double PI = 3.141592653589793238460;
+constexpr double PI = 3.141592653589793238460;
 
 typedef std::complex<double> Complex;
 typedef std::valarray<Complex> CArray;
 
 // Cooley–Tukey FFT (in-place, divide-and-conquer)
 // Higher memory requirements and redundancy although more intuitive
-void fft(CArray& x)
+inline void fft(CArray& x)
 {
 	const size_t N = x.size();
 	if (N <= 1) return;
@@ -29,6 +31,72 @@ void fft(CArray& x)
 		x[k] = even[k] + t;
 		x[k + N / 2] = even[k] - t;
 	}
+}
+
+inline std::complex<double> W(int kn, int length)
+{
+	const std::complex<double> j = std::complex<double>(0.0, 1.0);
+	return std::exp(-2.0 * config::pi * j * double(kn) / double(length));
+}
+
+inline void FFT(CArray &x)
+{
+	if (x.size() <= 1) {
+		return;
+	}
+
+	const size_t half = x.size() / 2;
+	CArray even(half);
+	CArray odd(half);
+
+	for (int i = 0; i < half; ++i) {
+		even[i] = x[i] + x[half + i];
+		odd[i] = (x[i] - x[half + i]) * W(i, x.size());
+	}
+
+	FFT(even);
+	FFT(odd);
+
+	for (int i = 0; i < half; ++i) {
+		const int ii = i * 2;
+		x[ii] = even[i];
+		x[ii + 1] = odd[i];
+	}
+}
+
+inline CArray dft(const CArray &src) {
+	const int N = src.size();
+	CArray dst(N);
+	for (int k = 0; k < N; ++k) {
+		double real = 0;
+		double imag = 0;
+		for (int n = 0; n < N; ++n) {
+			real += src[n].real() * (cos((2 * config::pi / N) * k * n)) 
+				+ src[n].imag() * (sin((2 * config::pi / N) * k * n));
+			imag += src[n].real() * (-sin((2 * config::pi / N) * k * n)) 
+				+ src[n].imag() * (cos((2 * config::pi / N) * k * n));
+		}
+		dst[k] = Complex(real, imag);
+	}
+
+	return dst;
+}
+
+inline std::valarray<double> generate_power_spectrum(const CArray &carray) {
+	std::valarray<double> ps(carray.size());
+	for (int i = 0; i < ps.size(); ++i) {
+		ps[i] = sqrt(pow(carray[i].real(), 2) + pow(carray[i].imag(), 2));
+	}
+}
+
+inline CArray generate_wave(const double f, const double step_time, const int size) {
+	CArray wave(size);
+	for (int i = 0; i < size; ++i) {
+		const double t = i * step_time;
+		wave[i] =  exp(Complex(0, 2 * config::pi * f * t));
+	}
+
+	return wave;
 }
 
 // Cooley-Tukey FFT (in-place, breadth-first, decimation-in-frequency)
@@ -84,7 +152,7 @@ void fft(CArray& x)
 //}
 
 // inverse fft (in-place)
-void ifft(CArray& x)
+inline void ifft(CArray& x)
 {
 	// conjugate the complex numbers
 	x = x.apply(std::conj);
@@ -99,10 +167,16 @@ void ifft(CArray& x)
 	x /= (double)x.size();
 }
 
-void quadrature_modulation(double f0, CArray& x) {
 
-}
+//inline Complex exp(Complex a) {
+//	Complex ret;
+//	
+//}
 
-void quadrature_demodulation(double f0, CArray& x) {
+struct Vec2d {
+	double x, y;
+};
 
-}
+struct Vec3d {
+	double x, y, z;
+};
