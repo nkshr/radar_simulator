@@ -180,3 +180,16 @@ struct Vec2d {
 struct Vec3d {
 	double x, y, z;
 };
+
+Vec2d operator+(const Vec2d &left, const Vec2d &right) {
+	Vec2d ret;
+	ret.x = left.x + right.x;
+	ret.y = left.y + right.y;
+}
+
+Vec3d operator+(const Vec3d &left, const Vec3d &right) {
+	Vec3d ret;
+	ret.x = left.x + right.x;
+	ret.y = left.y + right.y;
+	ret.z = left.z + right.z;
+}
