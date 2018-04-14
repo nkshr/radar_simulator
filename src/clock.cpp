@@ -1,12 +1,12 @@
 #include "clock.h"
 
-Clock::Clock(const unsigned int cf) : m_stop(false), m_num_clock(0), m_num_proc(0), m_num_excess(0),
+Clock::Clock(const double cf) : m_stop(false), m_num_clock(0), m_num_proc(0), m_num_excess(0),
 m_cf(cf), m_target_time(0) {
 }
 
 void Clock::start() {
 	m_time_per_clock = 
-		nanoseconds(static_cast<int>(round(1.0e9 / static_cast<double>(m_cf))));
+		nanoseconds(static_cast<int>(round(1.0e9 / m_cf)));
 	m_start_time = steady_clock::now();
 	cout << m_start_time.time_since_epoch().count() << endl;
 }
@@ -24,8 +24,8 @@ void Clock::adjust() {
 	nanoseconds sleep_time;
 
 	if (cur_time > m_target_time){
-		m_num_excess += (cur_time - m_target_time).count() / m_cf + 1;
-		const nanoseconds rem = nanoseconds(cur_time.count() % m_cf);
+		m_num_excess += (cur_time - m_target_time).count() / m_time_per_clock.count() + 1;
+		const nanoseconds rem = nanoseconds(cur_time.count() % m_time_per_clock.count());
 		sleep_time = m_time_per_clock - rem;
 		m_target_time = cur_time + sleep_time;
 	}
@@ -46,7 +46,7 @@ bool Clock::is_behind() {
 	return false;
 }
 
+
 steady_clock::duration Clock::get_cur_time() {
-	steady_clock::time_point n = steady_clock::now();
-	return  n - m_start_time;
+	return steady_clock::now() - m_start_time;
 }

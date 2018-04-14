@@ -10,7 +10,7 @@ using namespace std::this_thread;
 class Clock {
 
 public:
-	Clock(const unsigned int cf);
+	Clock(const double cf);
 	void start();
 	void stop();
 	void adjust();

@@ -76,51 +76,82 @@ void Simulator::init(){
 //}
 
 void Simulator::simulate(const Radar &radar, std::vector<Object> & objsects) {
-	const double chirp_rate = radar.bandwidth / radar.pulse_width;
-	Clock clock(radar.sample_rate);
+	const double chirp_rate = radar.bandwidth / radar.pulse_width; //chirp rate
+	const long long sampling_interval = radar.sampling_rate; //sampling interval
+	const long long pulse_interval = static_cast<long long>(round(1.0e9 / radar.prf));
+		
+	Clock clock(radar.sampling_rate);
 	clock.start();
+
+	long long last_pulse_time = 0;
 
 	while (true) {		
 		if (m_stop)
 			break;
 
+		const long long cur_time = clock.get_cur_time().count();
+		if (pulse_interval > cur_time - last_pulse_time) {
+			last_pulse_time = cur_time;
+		}
+
+		//const double s = simulate(radar.pos, radar.dir, 0, cur_time);
+		double s;
+		set_signal(cur_time, s);
+
 		sleep_for(milliseconds(100));
 
 		clock.adjust();
 	}
+
+	clock.stop();
 }
 
-void Simulator::simulate(const Vec3d &start, const Vec3d &dir, const int depth) {
+double Simulator::simulate(const Vec3d &start, const Vec3d &dir,
+	const int depth, const long long stime, const long long etime, const long long t0) {
 	if (depth > m_sconfig.max_depth)
-		return;
+		return 0.0;
 	
 	double t;
 	double reflectance;
 
-	if (!check_intersection(start, dir, t, reflectance)) {
 
+	Intersection isct = check_intersection(start, dir);
+	if (!isct.hit) {
+		return 0.0;
 	}
 
+	long long t1;
 
+	if (!is_in(stime, etime, t1)) {
+		return 0.0;
+	}
+
+	double s;
+	return s;
 	//simulate(next_start, next_dir, depth+1);
 }
+
 
 void Simulator::update() {
 
 }
 
-bool Simulator::check_intersection(const Vec3d &start, const Vec3d &dir,
-	double &t, double &reflectance) {
+void Simulator::set_signal(const long long t, const double s) {
+}
+
+Intersection Simulator::check_intersection(const Vec3d &start, const Vec3d &dir) {
+	Intersection closest_isct;
+
 	vector<Object>::iterator it = m_sconfig.objects.begin();
 	vector<Object>::iterator end = m_sconfig.objects.end();
 
 	for (; it != end; ++it) {
-		Vec3d dist;
-		bool isct;
-		it->check_intersection(start, dir, dist, isct);
-
+		Intersection isct = it->check_intersection(start, dir);
+		if (isct.dist < closest_isct.dist)
+			closest_isct = isct;
 	}
-	return true;
+
+	return closest_isct;
 }
 
 CArray Simulator::get_rx() {

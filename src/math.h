@@ -174,22 +174,75 @@ inline void ifft(CArray& x)
 //}
 
 struct Vec2d {
+	Vec2d(double _x = 0.0, double _y = 0.0) {
+		x = _x;
+		y = _y;
+	}
+
 	double x, y;
+
 };
 
 struct Vec3d {
+	Vec3d(double _x = 0.0, double _y = 0.0, double _z = 0.0) {
+		x = _x;
+		y = _y;
+		z = _z;
+	}
+
+	Vec3d(const Vec3d& v) {
+		x = v.x;
+		y = v.y;
+		z = v.z;
+	}
+
 	double x, y, z;
+
+	Vec3d normalize() {
+		const double recp_d = 1.0 / sqrt(x * x + y * y + z * z);
+		Vec3d nv;
+		nv.x = x * recp_d;
+		nv.y = y * recp_d;
+		nv.z = z * recp_d;
+	}
+
+	double norm() {
+		return sqrt(x * x + y * y + z * z);
+	}
+
+	static Vec3d zeros() {
+		return Vec3d();
+	}
+
+	static Vec3d e0() {
+		return Vec3d(1.0, 0.0, 0.0);
+	}
 };
 
-Vec2d operator+(const Vec2d &left, const Vec2d &right) {
+
+inline Vec2d operator+(const Vec2d &left, const Vec2d &right) {
 	Vec2d ret;
 	ret.x = left.x + right.x;
 	ret.y = left.y + right.y;
+	return ret;
 }
 
-Vec3d operator+(const Vec3d &left, const Vec3d &right) {
+inline Vec3d operator+(const Vec3d &left, const Vec3d &right) {
 	Vec3d ret;
 	ret.x = left.x + right.x;
 	ret.y = left.y + right.y;
 	ret.z = left.z + right.z;
+	return ret;
+}
+
+inline Vec3d operator-(const Vec3d &left, const Vec3d &right) {
+	Vec3d ret;
+	ret.x = left.x - right.x;
+	ret.y = left.y - right.y;
+	ret.z = left.z - right.z;
+	return ret;
+}
+
+inline bool is_in(const double min, const double max, const double x) {
+	return min <= x ? x < max : false;
 }

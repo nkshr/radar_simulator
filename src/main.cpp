@@ -105,11 +105,10 @@ int main()
 	//}
 
 	Radar radar;
-	radar.x = 0;
 	radar.bandwidth = 10e6;
 	radar.pulse_width = 10e-6;
-	radar.pulse_interval = 1000e-6;
 	radar.gain = 1;
+	radar.sampling_rate = 1;
 
 	std::vector<Object> objects;
 	objects.push_back(Object(15));
@@ -117,24 +116,22 @@ int main()
 	objects.push_back(Object(100, 2));
 
 	SConfig sconfig;
-	sconfig.num_samples = config::num_samples;
-	sconfig.sample_time = config::sample_time;
 
 	Simulator simulator(sconfig);
 	simulator.simulate( radar, objects);
 
-	CArray rx = simulator.get_rx();
-	write_data("rx.csv", rx, config::sample_time);
-	
-	CArray tx = simulator.get_tx();
-	write_data("tx.csv", tx, config::sample_time);
+	//CArray rx = simulator.get_rx();
+	//write_data("rx.csv", rx, config::sample_time);
+	//
+	//CArray tx = simulator.get_tx();
+	//write_data("tx.csv", tx, config::sample_time);
 
-	write_data("tx.csv", tx, 1024);
+	//write_data("tx.csv", tx, 1024);
 
-	tx = dft(tx);
-	write_data("tx_fft.csv", tx, 1e-6, AMP);
+	//tx = dft(tx);
+	//write_data("tx_fft.csv", tx, 1e-6, AMP);
 
-	rx = dft(rx);
-	write_data("rx_fft.csv", rx, 1e-6, REAL_AMP);
+	//rx = dft(rx);
+	//write_data("rx_fft.csv", rx, 1e-6, REAL_AMP);
 	return 0;
 }
