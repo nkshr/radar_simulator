@@ -1,8 +1,18 @@
 #include <complex>
+#include <iterator>
+#include <chrono>
+#include <thread>
+#include <ctime>
 
 #include "simulator.h"
+#include "clock.h"
 
-Simulator::Simulator(const SConfig &sconfig) {
+using namespace std;
+using namespace std::chrono;
+
+using namespace std::this_thread;
+
+Simulator::Simulator(const SConfig &sconfig): m_stop(false) {
 	m_sconfig = sconfig;
 }
 
@@ -67,21 +77,50 @@ void Simulator::init(){
 
 void Simulator::simulate(const Radar &radar, std::vector<Object> & objsects) {
 	const double chirp_rate = radar.bandwidth / radar.pulse_width;
+	Clock clock(radar.sample_rate);
+	clock.start();
 
+	while (true) {		
+		if (m_stop)
+			break;
+
+		sleep_for(milliseconds(100));
+
+		clock.adjust();
+	}
 }
 
-void Simulator::simulate(const Vec2d &start, const Vec3d &dir, const int depth) {
+void Simulator::simulate(const Vec3d &start, const Vec3d &dir, const int depth) {
 	if (depth > m_sconfig.max_depth)
 		return;
 	
-	Vec2d next_start;
-	Vec3d next_dir;
+	double t;
+	double reflectance;
 
-	simulate(next_start, next_dir, depth+1);
+	if (!check_intersection(start, dir, t, reflectance)) {
+
+	}
+
+
+	//simulate(next_start, next_dir, depth+1);
 }
 
 void Simulator::update() {
 
+}
+
+bool Simulator::check_intersection(const Vec3d &start, const Vec3d &dir,
+	double &t, double &reflectance) {
+	vector<Object>::iterator it = m_sconfig.objects.begin();
+	vector<Object>::iterator end = m_sconfig.objects.end();
+
+	for (; it != end; ++it) {
+		Vec3d dist;
+		bool isct;
+		it->check_intersection(start, dir, dist, isct);
+
+	}
+	return true;
 }
 
 CArray Simulator::get_rx() {
