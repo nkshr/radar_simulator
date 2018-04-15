@@ -11,10 +11,13 @@ class Clock {
 
 public:
 	Clock(const double cf);
+	
+	static void init();
+	
 	void start();
 	void stop();
 	void adjust();
-	bool is_behind();
+	
 	steady_clock::duration get_cur_time();
 
 private:
@@ -26,6 +29,8 @@ private:
 	double m_proc_rate;
 
 	nanoseconds m_time_per_clock;
-	steady_clock::time_point m_start_time;
+	
+	static steady_clock::time_point m_start_time;
+	
 	steady_clock::duration m_target_time;
 };

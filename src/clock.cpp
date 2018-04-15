@@ -4,11 +4,14 @@ Clock::Clock(const double cf) : m_stop(false), m_num_clock(0), m_num_proc(0), m_
 m_cf(cf), m_target_time(0) {
 }
 
-void Clock::start() {
-	m_time_per_clock = 
-		nanoseconds(static_cast<int>(round(1.0e9 / m_cf)));
+void Clock::init() {
 	m_start_time = steady_clock::now();
-	cout << m_start_time.time_since_epoch().count() << endl;
+}
+
+void Clock::start() {
+	m_time_per_clock =
+		nanoseconds(static_cast<int>(round(1.0e9 / m_cf)));
+	m_target_time = get_cur_time();
 }
 
 
@@ -42,9 +45,6 @@ void Clock::adjust() {
 	cout << "current time : " << duration_cast<milliseconds>(get_cur_time()).count() << endl;
 }
 
-bool Clock::is_behind() {
-	return false;
-}
 
 
 steady_clock::duration Clock::get_cur_time() {

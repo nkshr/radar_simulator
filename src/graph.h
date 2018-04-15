@@ -1,11 +1,17 @@
 #pragma once
+#include "clock.h"
 
 class Vertex {
-	virtual  bool run();
+public:
+	bool run();
+
+private:
+	Clock m_clock;
+
+	virtual bool process() = 0;
 };
 
 class Edge {
-	virtual bool run();
 };
 
 class Graph {
@@ -15,6 +21,10 @@ public:
 	void remove();
 
 private:
+	int m_num_vertexes;
+	int m_num_edges;
+
 	Vertex * vertexes;
 	Edge * Edges;
+
 };
