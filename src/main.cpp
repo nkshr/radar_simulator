@@ -110,15 +110,12 @@ int main()
 	radar.gain = 1;
 	radar.sampling_rate = 1;
 
-	std::vector<Object> objects;
-	objects.push_back(Object(15));
-	objects.push_back(Object(30, 0.5));
-	objects.push_back(Object(100, 2));
+	//std::vector<Object> objects;
 
 	SConfig sconfig;
 
 	Simulator simulator(sconfig);
-	simulator.simulate( radar, objects);
+	//simulator.simulate( radar, objects);
 
 	//CArray rx = simulator.get_rx();
 	//write_data("rx.csv", rx, config::sample_time);

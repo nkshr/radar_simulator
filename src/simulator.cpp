@@ -107,7 +107,7 @@ void Simulator::simulate(const Radar &radar, std::vector<Object> & objsects) {
 }
 
 double Simulator::simulate(const Vec3d &start, const Vec3d &dir,
-	const int depth, const long long stime, const long long etime, const long long t0) {
+	int depth, long long stime, long long etime, long long t0) {
 	if (depth > m_sconfig.max_depth)
 		return 0.0;
 	
@@ -142,11 +142,11 @@ void Simulator::set_signal(const long long t, const double s) {
 Intersection Simulator::check_intersection(const Vec3d &start, const Vec3d &dir) {
 	Intersection closest_isct;
 
-	vector<Object>::iterator it = m_sconfig.objects.begin();
-	vector<Object>::iterator end = m_sconfig.objects.end();
+	vector<Object*>::iterator it = m_sconfig.objects.begin();
+	vector<Object*>::iterator end = m_sconfig.objects.end();
 
 	for (; it != end; ++it) {
-		Intersection isct = it->check_intersection(start, dir);
+		Intersection isct = (*it)->check_intersection(start, dir);
 		if (isct.dist < closest_isct.dist)
 			closest_isct = isct;
 	}

@@ -4,7 +4,11 @@
 #include <iostream>
 #include <valarray>
 
-constexpr double PI = 3.141592653589793238460;
+namespace constant {
+	constexpr double pi = 3.141592653589793238460;
+	constexpr double c = 3.0e8;
+}
+
 
 typedef std::complex<double> Complex;
 typedef std::valarray<Complex> CArray;
@@ -27,7 +31,7 @@ inline void fft(CArray& x)
 	// combine
 	for (size_t k = 0; k < N / 2; ++k)
 	{
-		Complex t = std::polar(1.0, -2 * PI * k / N) * odd[k];
+		Complex t = std::polar(1.0, -2 * constant::pi * k / N) * odd[k];
 		x[k] = even[k] + t;
 		x[k + N / 2] = even[k] - t;
 	}
@@ -36,7 +40,7 @@ inline void fft(CArray& x)
 inline std::complex<double> W(int kn, int length)
 {
 	const std::complex<double> j = std::complex<double>(0.0, 1.0);
-	return std::exp(-2.0 * config::pi * j * double(kn) / double(length));
+	return std::exp(-2.0 * constant::pi * j * double(kn) / double(length));
 }
 
 inline void FFT(CArray &x)
@@ -71,10 +75,10 @@ inline CArray dft(const CArray &src) {
 		double real = 0;
 		double imag = 0;
 		for (int n = 0; n < N; ++n) {
-			real += src[n].real() * (cos((2 * config::pi / N) * k * n)) 
-				+ src[n].imag() * (sin((2 * config::pi / N) * k * n));
-			imag += src[n].real() * (-sin((2 * config::pi / N) * k * n)) 
-				+ src[n].imag() * (cos((2 * config::pi / N) * k * n));
+			real += src[n].real() * (cos((2 * constant::pi / N) * k * n)) 
+				+ src[n].imag() * (sin((2 * constant::pi / N) * k * n));
+			imag += src[n].real() * (-sin((2 * constant::pi / N) * k * n)) 
+				+ src[n].imag() * (cos((2 * constant::pi / N) * k * n));
 		}
 		dst[k] = Complex(real, imag);
 	}
@@ -93,7 +97,7 @@ inline CArray generate_wave(const double f, const double step_time, const int si
 	CArray wave(size);
 	for (int i = 0; i < size; ++i) {
 		const double t = i * step_time;
-		wave[i] =  exp(Complex(0, 2 * config::pi * f * t));
+		wave[i] =  exp(Complex(0, 2 * constant::pi * f * t));
 	}
 
 	return wave;
@@ -241,6 +245,10 @@ inline Vec3d operator-(const Vec3d &left, const Vec3d &right) {
 	ret.y = left.y - right.y;
 	ret.z = left.z - right.z;
 	return ret;
+}
+
+inline double operator*(const Vec3d &left, const Vec3d &right) {
+	return left.x * right.x + left.y * right.y + left.z * right.z;
 }
 
 inline bool is_in(const double min, const double max, const double x) {
