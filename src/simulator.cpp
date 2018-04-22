@@ -75,6 +75,24 @@ void Simulator::init(){
 //	}
 //}
 
+bool Simulator::process() {
+	const double chirp_rate = m_radar.bandwidth / m_radar.pulse_width; //chirp rate
+	const long long sampling_interval = m_radar.sampling_rate; //sampling interval
+	const long long pulse_interval = static_cast<long long>(round(1.0e9 / m_radar.prf));
+
+	const long long cur_time = m_clock.get_cur_time();
+	double r;
+
+	if (cur_time - m_last_pulse_time > m_pulse_interval) {
+		m_last_pulse_time = 0;
+	}
+
+	r = simulate(m_radar.pos, m_radar.dir, m_last_pulse_time, cur_time, cur_time + m_clock.get_time_per_clock());
+	m_rs->set_signal(r, cur_time);
+
+	return true;
+}
+
 void Simulator::simulate(const Radar &radar, std::vector<Object> & objsects) {
 	const double chirp_rate = radar.bandwidth / radar.pulse_width; //chirp rate
 	const long long sampling_interval = radar.sampling_rate; //sampling interval
@@ -89,7 +107,7 @@ void Simulator::simulate(const Radar &radar, std::vector<Object> & objsects) {
 		if (m_stop)
 			break;
 
-		const long long cur_time = clock.get_cur_time().count();
+		const long long cur_time = clock.get_cur_time();
 		if (pulse_interval > cur_time - last_pulse_time) {
 			last_pulse_time = cur_time;
 		}
@@ -107,7 +125,7 @@ void Simulator::simulate(const Radar &radar, std::vector<Object> & objsects) {
 }
 
 double Simulator::simulate(const Vec3d &start, const Vec3d &dir,
-	int depth, long long stime, long long etime, long long t0) {
+	int depth, long long stime, long long etime) {
 	if (depth > m_sconfig.max_depth)
 		return 0.0;
 	
@@ -131,10 +149,6 @@ double Simulator::simulate(const Vec3d &start, const Vec3d &dir,
 	//simulate(next_start, next_dir, depth+1);
 }
 
-
-void Simulator::update() {
-
-}
 
 void Simulator::set_signal(const long long t, const double s) {
 }

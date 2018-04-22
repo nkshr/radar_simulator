@@ -18,7 +18,8 @@ public:
 	void stop();
 	void adjust();
 	
-	steady_clock::duration get_cur_time();
+	long long get_cur_time() const;
+	long long get_time_per_clock() const;
 
 private:
 	bool m_stop;
@@ -26,11 +27,11 @@ private:
 	long long m_num_clock;
 	long long m_num_proc;
 	long long m_num_excess;
+	long long m_time_per_clock;
+	long long m_target_time;
+
 	double m_proc_rate;
 
-	nanoseconds m_time_per_clock;
-	
 	static steady_clock::time_point m_start_time;
 	
-	steady_clock::duration m_target_time;
 };

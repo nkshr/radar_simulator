@@ -7,10 +7,11 @@ public:
 	void join();
 	void processing_loop();
 
-private:
+protected:
 	bool m_brun;
 
 	thread m_th;
+
 	Clock m_clock;
 
 	virtual bool process() = 0;

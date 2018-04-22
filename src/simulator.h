@@ -5,6 +5,7 @@
 #include "config.h"
 #include "math.h"
 #include "object.h"
+#include "graph.h"
 
 using namespace std;
 
@@ -25,9 +26,16 @@ struct SConfig {
 	vector<Object*> objects;
 };
 
-class Simulator {
-	//Radar m_radar;
-	//std::vector<Object> m_objects;
+class Simulator : protected Vertex{
+private:
+	long long m_last_pulse_time;
+
+	double m_pulse_interval;
+
+	Radar m_radar;
+	
+	vector<Object*> m_objects;
+	
 	bool m_stop;
 
 	CArray m_rx;
@@ -35,12 +43,16 @@ class Simulator {
 
 	SConfig m_sconfig;
 
+	RadarSignal *m_rs;
+
 public:
 	Simulator(const SConfig &sconfig);
 	void init();
+	bool process();
+
 	void simulate(const Radar &radar, std::vector<Object> &objects);
 	double simulate(const Vec3d &start, const Vec3d &dir,
-		int depth, long long stime, long long etime, long long t);
+		int depth, long long stime, long long etime);
 	void set_signal(const long long t, const double s);
 
 	Intersection check_intersection(const Vec3d &start, const Vec3d &dir);

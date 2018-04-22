@@ -9,8 +9,7 @@ void Clock::init() {
 }
 
 void Clock::start() {
-	m_time_per_clock =
-		nanoseconds(static_cast<int>(round(1.0e9 / m_cf)));
+	m_time_per_clock = static_cast<long long>(round(1.0e9 / m_cf));
 	m_target_time = get_cur_time();
 }
 
@@ -22,13 +21,15 @@ void Clock::stop() {
 void Clock::adjust() {
 	m_num_clock++;
 	m_num_proc++;
-	steady_clock::duration cur_time = get_cur_time();
+	
+	const long long cur_time = get_cur_time();
 	m_target_time += m_time_per_clock;
-	nanoseconds sleep_time;
+	
+	long long sleep_time;
 
 	if (cur_time > m_target_time){
-		m_num_excess += (cur_time - m_target_time).count() / m_time_per_clock.count() + 1;
-		const nanoseconds rem = nanoseconds(cur_time.count() % m_time_per_clock.count());
+		m_num_excess += (cur_time - m_target_time) / m_time_per_clock + 1;
+		const long long rem = cur_time % m_time_per_clock;
 		sleep_time = m_time_per_clock - rem;
 		m_target_time = cur_time + sleep_time;
 	}
@@ -36,17 +37,21 @@ void Clock::adjust() {
 		sleep_time = m_target_time - cur_time;
 	}
 
-	cout << "sleep time : " << duration_cast<milliseconds>(sleep_time).count() << endl;
-	sleep_for(sleep_time);
-
+	cout << "sleep time : " << duration_cast<milliseconds>(nanoseconds(sleep_time)).count() << endl;
+	sleep_for(nanoseconds(sleep_time));
+	
 	cout << "target time : " << 
-		duration_cast<milliseconds>(m_target_time).count() << endl;
+		duration_cast<milliseconds>(nanoseconds(m_target_time)).count() << endl;
 
-	cout << "current time : " << duration_cast<milliseconds>(get_cur_time()).count() << endl;
+	cout << "current time : " << duration_cast<milliseconds>(nanoseconds(get_cur_time())).count() << endl;
 }
 
 
 
-steady_clock::duration Clock::get_cur_time() {
-	return steady_clock::now() - m_start_time;
+long long Clock::get_cur_time() const{
+	return (steady_clock::now() - m_start_time).count();
+}
+
+long long Clock::get_time_per_clock() const {
+	return m_time_per_clock;
 }

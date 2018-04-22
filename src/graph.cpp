@@ -58,10 +58,12 @@ RadarSignal::~RadarSignal() {
 }
 
 void RadarSignal::set_signal(double d, long long t) {
+	mtx.lock();
 	m_buf[m_idx] = d;
 	m_times[m_idx] = t;
 
 	if (++m_idx == m_buf_size) {
 		m_idx = 0;
 	}
+	mtx.unlock();
 }
