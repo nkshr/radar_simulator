@@ -4,8 +4,10 @@
 
 using namespace std;
 
+WSADATA UDP::m_wsa;
+
 bool UDP::init_win_sock() {
-	if (WSAStartup(WINSOCK_VERSION, &wsa) != 0) {
+	if (WSAStartup(WINSOCK_VERSION, &m_wsa) != 0) {
 		cerr << " Windows Socket initialization error : " << WSAGetLastError() << endl;
 		return false;
 	}
@@ -15,7 +17,7 @@ bool UDP::init_win_sock() {
 
 bool UDP::close_win_sock() {
 	if (WSACleanup() != 0) {
-		cerr << "Windows Socket Termination error : " << WSAGetLastError() << endl;
+		cerr << "Windows Socket termination error : " << WSAGetLastError() << endl;
 		return false;
 	}
 	return true;
@@ -23,12 +25,12 @@ bool UDP::close_win_sock() {
 
 
 bool UDP::init() {
-	if ((sock = socket(server.sin_family, SOCK_DGRAM, 0)) == INVALID_SOCKET){
+	if ((m_sock = socket(m_server.sin_family, SOCK_DGRAM, 0)) == INVALID_SOCKET){
 		cerr << "Socket creationn error : " << WSAGetLastError() << endl;
 		return false;
 	}
 
-	if (bind(sock, (sockaddr*)&server, sizeof(server)) == SOCKET_ERROR) {
+	if (bind(m_sock, (sockaddr*)&m_server, sizeof(m_server)) == SOCKET_ERROR) {
 		cerr << "Binding error : " << WSAGetLastError() << endl;
 		return false;
 	}
@@ -36,9 +38,8 @@ bool UDP::init() {
 }
 
 int UDP::receive(char * buf, int buf_size) {
-	int recv_len, slen;
-
-	if((recv_len = recvfrom(sock, buf, buf_size, 0, (sockaddr*) &client, &slen)) == SOCKET_ERROR)
+	int recv_len;
+	if((recv_len = recvfrom(m_sock, buf, buf_size, 0, (sockaddr*) &m_from, &m_from_len)) == SOCKET_ERROR)
 	{
 		cerr << "Recieving error : " << WSAGetLastError() << endl;
 		return -1;
@@ -47,20 +48,32 @@ int UDP::receive(char * buf, int buf_size) {
 	return recv_len;
 }
 
-bool UDP::send(const char * buf, int buf_size) {
-	if (sendto(sock, buf, buf_size, 0, (sockaddr*)&client.sin_addr, cli_len) == SOCKET_ERROR)
+int UDP::send(const char * buf, int buf_size) {
+	int ssize;
+	ssize = sendto(m_sock, buf, buf_size, 0, (sockaddr*)&m_to.sin_addr, m_to_len);
+	if (ssize == SOCKET_ERROR)
 	{
 		cerr << "Sending error : " << WSAGetLastError() << endl;
-		return false;
+		return -1;
 	}
 
-	return true;
+	return ssize;
 }
 
+
+
 bool UDP::close() {
-	if (closesocket(sock) != 0) {
+	if (closesocket(m_sock) != 0) {
 		cerr << "Socket closing error : " << WSAGetLastError() << endl;
 		return false;
 	}
 	return true;
+}
+
+void UDP::set_port(int port) {
+	m_server.sin_port = htons(port);
+}
+
+void UDP::set_addr(const char* addr) {
+	m_to.sin_addr.S_un.S_addr = inet_addr(addr);
 }
