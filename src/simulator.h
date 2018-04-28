@@ -26,15 +26,11 @@ struct SConfig {
 	vector<Object*> objects;
 };
 
-class Simulator : protected Vertex{
+class Simulator : public Vertex{
 private:
 	long long m_last_pulse_time;
 
 	double m_pulse_interval;
-
-	Radar m_radar;
-	
-	vector<Object*> m_objects;
 	
 	bool m_stop;
 
@@ -48,7 +44,8 @@ private:
 public:
 	Simulator(const SConfig &sconfig);
 	void init();
-	bool process();
+
+	virtual bool process();
 
 	void simulate(const Radar &radar, std::vector<Object> &objects);
 	double simulate(const Vec3d &start, const Vec3d &dir,

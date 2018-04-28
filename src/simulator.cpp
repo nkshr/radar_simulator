@@ -12,7 +12,7 @@ using namespace std::chrono;
 
 using namespace std::this_thread;
 
-Simulator::Simulator(const SConfig &sconfig): m_stop(false) {
+Simulator::Simulator(const SConfig &sconfig): Vertex(), m_stop(false) {
 	m_sconfig = sconfig;
 }
 
@@ -76,18 +76,14 @@ void Simulator::init(){
 //}
 
 bool Simulator::process() {
-	const double chirp_rate = m_radar.bandwidth / m_radar.pulse_width; //chirp rate
-	const long long sampling_interval = m_radar.sampling_rate; //sampling interval
-	const long long pulse_interval = static_cast<long long>(round(1.0e9 / m_radar.prf));
-
 	const long long cur_time = m_clock.get_cur_time();
 	double r;
 
-	if (cur_time - m_last_pulse_time > m_pulse_interval) {
+	if (cur_time - m_last_pulse_time > m_sconfig.radar.pulse_interval) {
 		m_last_pulse_time = 0;
 	}
 
-	r = simulate(m_radar.pos, m_radar.dir, m_last_pulse_time, cur_time, cur_time + m_clock.get_time_per_clock());
+	r = simulate(m_sconfig.radar.pos, m_sconfig.radar.dir, m_last_pulse_time, cur_time, cur_time + m_clock.get_time_per_clock());
 	m_rs->set_signal(r, cur_time);
 
 	return true;

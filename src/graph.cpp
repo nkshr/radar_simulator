@@ -2,6 +2,10 @@
 #include <future>
 #include <mutex>
 
+#include <WinSock2.h>
+
+#pragma comment(lib, "ws2_32.lib")
+
 #include "graph.h"
 
 mutex mtx;
@@ -18,9 +22,6 @@ void Vertex::processing_loop() {
 	m_clock.start();
 	
 	while (true) {
-		mtx.lock();
-
-		mtx.unlock();
 		if (!m_brun)
 			break;
 
@@ -36,11 +37,15 @@ void Vertex::processing_loop() {
 
 void Graph::run() {
 
-	for (int i = 0; i < m_num_vertexes; ++i) {
-		m_vertexes[i].run();
+	for (int i = 0; i < m_vertexes.size(); ++i) {
+		m_vertexes[i]->run();
 	}
 
 	listen();
+}
+
+void Graph::add_vertex(Vertex* v) {
+	m_vertexes.push_back(v);
 }
 
 void Graph::listen() {

@@ -36,6 +36,7 @@ struct Radar {
 	double gain;
 	double sampling_rate; //sampling rate
 	double anntena_rpm; //anntena revolution per minutes
+	double pulse_interval;
 
 	Vec3d pos;
 	Vec3d dir;

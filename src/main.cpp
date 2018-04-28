@@ -103,18 +103,22 @@ int main()
 	//{
 	//	std::cout << data[i] << std::endl;
 	//}
+	SConfig sconfig;
 
-	Radar radar;
-	radar.bandwidth = 10e6;
-	radar.pulse_width = 10e-6;
-	radar.gain = 1;
-	radar.sampling_rate = 1;
+	sconfig.radar.bandwidth = 10e6;
+	sconfig.radar.pulse_width = 10e-6;
+	sconfig.radar.gain = 1;
+	sconfig.radar.sampling_rate = 1;
 
 	//std::vector<Object> objects;
 
-	SConfig sconfig;
 
-	Simulator simulator(sconfig);
+	Vertex * simulator = static_cast<Vertex*>(new Simulator(sconfig));
+
+	Graph graph;
+	graph.add_vertex(simulator);
+
+	graph.run();
 	//simulator.simulate( radar, objects);
 
 	//CArray rx = simulator.get_rx();

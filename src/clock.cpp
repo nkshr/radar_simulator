@@ -1,5 +1,7 @@
 #include "clock.h"
 
+steady_clock::time_point Clock::m_start_time;
+
 Clock::Clock(const double cf) : m_stop(false), m_num_clock(0), m_num_proc(0), m_num_excess(0),
 m_cf(cf), m_target_time(0) {
 }

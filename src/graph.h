@@ -3,9 +3,13 @@
 
 class Vertex {
 public:
+//	Vertex() {};
+
 	void run();
 	void join();
 	void processing_loop();
+
+	virtual bool process() = 0;
 
 protected:
 	bool m_brun;
@@ -14,7 +18,6 @@ protected:
 
 	Clock m_clock;
 
-	virtual bool process() = 0;
 };
 
 class Edge {
@@ -23,18 +26,14 @@ class Edge {
 class Graph {
 public:
 	void run();
-	void add();
+	void add_vertex(Vertex* v);
+
 	void remove();
-	template<typename T>
-	void set_edges(const char * vertex_name, const char * variable_name, T value);
 	void listen();
 
 private:
-	int m_num_vertexes;
-	int m_num_edges;
-
-	Vertex * m_vertexes;
-	Edge * m_edges;
+	vector<Vertex*> m_vertexes;
+	vector<Edge*> m_edges;
 
 };
 

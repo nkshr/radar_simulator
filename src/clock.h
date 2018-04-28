@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include <chrono>
 #include <ctime>
@@ -10,7 +12,7 @@ using namespace std::this_thread;
 class Clock {
 
 public:
-	Clock(const double cf);
+	Clock(const double cf = 10.0);
 	
 	static void init();
 	
