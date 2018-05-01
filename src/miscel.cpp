@@ -141,7 +141,7 @@ char* CmdParser::get_buf(){
 	return m_buf;
 }
 
-CmdParser::Cmd CmdParser::get_cmd() const {
+Cmd CmdParser::get_cmd() const {
 	return m_cmd;
 }
 bool CmdParser::set_cmd(char* cmd) {
@@ -153,4 +153,8 @@ bool CmdParser::set_cmd(char* cmd) {
 	}
 	
 	return false;
+}
+
+const vector<char*>& CmdParser::get_args() const {
+	return m_args;
 }

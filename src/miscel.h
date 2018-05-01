@@ -38,21 +38,22 @@ enum Cmd {
 	VSET,
 	ESET,
 	RUN,
+	STOP,
+	CLOSE,
 	CMD_END
 };
 
 class CmdParser {
 public:
 
-	CmdParser();
+	CmdParser() {};
 	bool parse();
 	void encode(char* &buf, int& buf_size);
 	bool decode(char* buf);
 
 	int get_buf_size() const;
 	char* get_buf();
-	void set_buf(char* buf, int buf_size);
-
+	
 	Cmd get_cmd() const;
 	char* get_vertex_type() const;
 	char* get_vertex_id() const;
