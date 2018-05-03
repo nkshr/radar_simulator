@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include  <map>
 
 #include <WinSock2.h>
 
@@ -11,9 +12,11 @@
 
 #include "graph.h"
 
+using namespace std;
+
 mutex mtx;
 
-Vertex::Vertex(const char* vname) {
+Vertex::Vertex(const char* vname) : m_brun(false){
 	strcpy(m_vname, vname);
 }
 
@@ -44,16 +47,32 @@ void Vertex::stop() {
 	m_brun = false;
 }
 
+void Graph::init() {
+	register_vertex<CmdTerminal>("cmd_terminal");
+}
+
 void Graph::run() {
 	listen();
 
-	for (int i = 0; i < m_vertexes.size(); ++i) {
-		m_vertexes[i]->join();
+	for (vmap::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it) {
+		it->second->join();
 	}
 }
 
-void Graph::add_vertex(Vertex* v) {
-	m_vertexes.push_back(v);
+void Graph::stop_all() {
+	for (vmap::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it) {
+		it->second->stop();
+	}
+}
+
+bool Graph::stop(const char* vname) {
+	for (vmap::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it) {
+		if (strcmp(it->first, vname) == 0) {
+			it->second->stop();
+			return true;
+		}
+	}
+	return false;
 }
 
 void Graph::listen() {
@@ -105,7 +124,11 @@ void Graph::listen() {
 				stop_all();
 			}
 			else {
-				stop(args);
+				for (int i = 0; i < args.size(); ++i) {
+					if (!stop(args[i])) {
+						cerr << "Couldn't find vertex " << args[i] << "." << endl;
+					}
+				}
 			}
 			break;
 		case Cmd::CLOSE:
@@ -118,13 +141,13 @@ void Graph::listen() {
 }
 
 void Graph::set_port(int port) {
-
+	m_udp.set_port(port);
 }
 
 bool Graph::create_vertex(const char* vtype, const char* vname) {
-	for (int i = 0; i < m_vertex_types.size(); ++i) {
-		if (strcmp(m_vertex_types[i], vtype) == 0) {
-			m_vcreators[i](vname);
+	for (vcmap::iterator it = m_vcreators.begin(); it != m_vcreators.end(); ++it) {
+		if (strcmp(it->first, vtype) == 0) {
+			//it->second(vname);
 			return true;
 		}
 	}
@@ -133,16 +156,17 @@ bool Graph::create_vertex(const char* vtype, const char* vname) {
 
 template <typename T>
 void Graph::create_vertex(const char* vname) {
-	m_vertexes.push_back(dynamic_cast<T>(new T(vname)));
+	m_vertexes.insert(pair<const char*, Vertex*>(vname, dynamic_cast<Vertex*>(new T(vname))));
+	//m_vertexes.push_back(dynamic_cast<T>(new T(vname)));
 }
 
 bool Graph::create_edge(const char* etype, const char* ename) {
-	for (int i = 0; i < m_edge_types.size(); ++i) {
-		if (strcmp(m_edge_types[i], etype) == 0) {
-			m_ecreators[i](ename);
-			return true;
-		}
-	}
+	//for (int i = 0; i < m_edge_types.size(); ++i) {
+	//	if (strcmp(m_edge_types[i], etype) == 0) {
+	//		m_ecreators[i](ename);
+	//		return true;
+	//	}
+	//}
 	return false;
 }
 
@@ -150,24 +174,30 @@ template <typename T>
 void Graph::create_edge(const char *ename) {
 	m_edges.push_back(dynamic_cast<T>(new T(name)));
 }
+void foo(const char* s) {}
+
+//template <typename T>
+//void Graph::register_vertex(const char* vtype) {
+//	m_vcreators.insert(vtype, foo);
+//}
 
 void Graph::run_all() {
-	for (int i = 0; i < m_vertexes.size(); ++i) {
-		m_vertexes[i]->run();
+	for (vmap::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it) {
+		it->second->run();
 	}
 }
 
-void Graph::run(const vector<char*>& vertexes) {
-	for (int i = 0; i < m_vertexes.size(); ++i) {
-		
-	}
-}
-
-void Graph::stop_all() {
-	for (int i = 0; i < m_vertexes.size(); ++i){
-		m_vertexes[i]->stop();
-	}
-}
+//void Graph::run(const vector<char*>& vertexes) {
+//	for (int i = 0; i < m_vertexes.size(); ++i) {
+//		
+//	}
+//}
+//
+//void Graph::stop_all() {
+//	for (int i = 0; i < m_vertexes.size(); ++i){
+//		m_vertexes[i]->stop();
+//	}
+//}
 
 bool CmdReceiver::process() {
 	const long long tpc = static_cast<int>(round(m_clock.get_time_per_clock() * 0.001));

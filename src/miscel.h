@@ -72,3 +72,12 @@ private:
 	vector<char*> m_cmds;
 	Cmd m_cmd;
 };
+
+struct string_comparator {
+	bool operator()(const char* str1, const char* str2) {
+		if (strcmp(str1, str2) < 0) {
+			return true;
+		}
+		return false;
+	}
+};

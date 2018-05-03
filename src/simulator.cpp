@@ -12,8 +12,8 @@ using namespace std::chrono;
 
 using namespace std::this_thread;
 
-Simulator::Simulator(const SConfig &sconfig): Vertex(), m_stop(false) {
-	m_sconfig = sconfig;
+Simulator::Simulator(const char* name) : Vertex(name) {
+
 }
 
 void Simulator::init(){

@@ -113,11 +113,14 @@ int main()
 	//std::vector<Object> objects;
 
 
-	Vertex * simulator = static_cast<Vertex*>(new Simulator(sconfig));
+	//Vertex * simulator = static_cast<Vertex*>(new Simulator(sconfig));
 
 	Graph graph;
-	graph.add_vertex(simulator);
+	//graph.add_vertex(simulator);
 
+	graph.init();
+
+	graph.create_vertex("cmd_receiver", "cmd_rcvr");
 	graph.run();
 	//simulator.simulate( radar, objects);
 

@@ -1,8 +1,15 @@
 #pragma once
+#include <map>
+#include <set>
+
 #include "clock.h"
 #include "miscel.h"
 
+using namespace std;
+
 class Graph;
+class Vertex;
+class Edge;
 
 class Vertex {
 public:
@@ -25,6 +32,8 @@ protected:
 	Graph *m_graph;
 };
 
+void foo(const char*s);
+
 class Edge {
 public:
 protected:
@@ -33,17 +42,23 @@ protected:
 	Vertex* m_from;
 };
 
-typedef void(*vcreator)(const char*);
+typedef void(Graph::*vcreator)(const char*);
 typedef void(*ecreator)(const char*);
+
+typedef map<const char*, Vertex*, string_comparator> vmap;
+typedef map<const char*, Edge*, string_comparator> emap;
+
+typedef map<const char*, vcreator, string_comparator> vcmap;
+typedef map<const char*, ecreator, string_comparator> ecmap;
 
 class Graph {
 public:
+	void init();
 	void run();
-	void add_vertex(Vertex* v);
 
 	void remove();
 	void listen();
-
+	
 	void set_port(int port);
 	
 	bool create_vertex(const char* vtype, const char* vname);
@@ -53,26 +68,27 @@ public:
 	void run(const vector<char*>& vertetxes);
 
 	void stop_all();
-	void stop(const vector<char*>& vertexes);
-
+	bool stop(const char* vname);
 
 private:
 	char m_cmd_buf[config::buf_size];
 
-	vector<Vertex*> m_vertexes;
-	vector<char*> m_vertex_types;
+	vmap m_vertexes;
+	emap m_edges;
 
-	vector<Edge*> m_edges;
-	vector<char*> m_edge_types;
+	vcmap m_vcreators;
+	ecmap m_ecreators;
 
 	template <typename T>
 	void create_vertex(const char* vname);
 	template <typename T>
 	void create_edge(const char* ename);
 
-	vector<vcreator> m_vcreators;
-	vector<ecreator> m_ecreators;
-	
+	template <typename T>
+	void register_vertex(const char* vtype) {
+		m_vcreators.insert(pair<const char*, vcreator>(vtype, &Graph::create_vertex<T>));
+	}
+
 	UDP m_udp;
 	CmdParser m_cp;
 };
@@ -91,6 +107,7 @@ private:
 
 class CmdTerminal : public Vertex{
 public:
+	CmdTerminal(const char* vname) : Vertex(vname){};
 	bool process();
 	
 private:

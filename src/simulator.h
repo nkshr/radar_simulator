@@ -42,7 +42,7 @@ private:
 	RadarSignal *m_rs;
 
 public:
-	Simulator(const SConfig &sconfig);
+	Simulator(const char* name);
 	void init();
 
 	virtual bool process();
