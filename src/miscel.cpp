@@ -6,6 +6,14 @@ using namespace std;
 
 WSADATA UDP::m_wsa;
 
+UDP::UDP() {
+	m_server.sin_family = AF_INET;
+	m_server.sin_addr.s_addr = INADDR_ANY;
+	set_port(88);
+	set_addr("192.168.128.1");
+	set_timeout(10, 0);
+}
+
 bool UDP::init_win_sock() {
 	if (WSAStartup(WINSOCK_VERSION, &m_wsa) != 0) {
 		cerr << " Windows Socket initialization error : " << WSAGetLastError() << endl;

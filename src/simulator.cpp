@@ -12,7 +12,7 @@ using namespace std::chrono;
 
 using namespace std::this_thread;
 
-Simulator::Simulator(const char* name) : Vertex(name) {
+Simulator::Simulator() : Vertex() {
 
 }
 

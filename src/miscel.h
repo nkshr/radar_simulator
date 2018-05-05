@@ -18,6 +18,8 @@ private:
 	static WSADATA m_wsa;
 
 public:
+	UDP();
+
 	static bool init_win_sock();
 	static bool close_win_sock();
 
@@ -40,6 +42,7 @@ enum Cmd {
 	RUN,
 	STOP,
 	CLOSE,
+	LS,
 	CMD_END
 };
 

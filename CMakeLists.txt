@@ -5,7 +5,6 @@ project(radar_simulator)
 set(SOURCE_FILES
 	src/clock.cpp
 	src/graph.cpp
-	src/main.cpp
 	src/miscel.cpp
 	src/modulator.cpp
 	src/object.cpp
@@ -22,4 +21,6 @@ set(HEADER_FILES
 	src/simulator.h
 )
 
-add_executable(radar_simulator src/main.cpp ${SOURCE_FILES} ${HEADER_FILES})
+add_executable(rsim_server src/server.cpp ${SOURCE_FILES} ${HEADER_FILES})
+
+add_executable(rsim src/client.cpp ${SOURCE_FILES} ${HEADER_FILES})

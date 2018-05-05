@@ -11,13 +11,14 @@
 #pragma comment(lib, "ws2_32.lib")
 
 #include "graph.h"
+#include "simulator.h"
+#include "miscel.h"
 
 using namespace std;
 
 mutex mtx;
 
-Vertex::Vertex(const char* vname) : m_brun(false){
-	strcpy(m_vname, vname);
+Vertex::Vertex() : m_brun(false){
 }
 
 void Vertex::run() {
@@ -48,14 +49,33 @@ void Vertex::stop() {
 }
 
 void Graph::init() {
-	register_vertex<CmdTerminal>("cmd_terminal");
+	UDP::init_win_sock();
+	m_udp.init();
+
+	register_vertex<CmdTerminal>("cmd_termial");
+	register_vertex<Simulator>("simulator");
 }
 
 void Graph::run() {
+	run_all();
 	listen();
 
 	for (vmap::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it) {
 		it->second->join();
+	}
+}
+
+void Graph::run(const string& vname) {
+	for (vmap::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it) {
+		if (it->first == vname) {
+			it->second->run();
+			return;
+		}
+	}
+}
+void Graph::run_all() {
+	for (vmap::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it) {
+		it->second->run();
 	}
 }
 
@@ -65,9 +85,9 @@ void Graph::stop_all() {
 	}
 }
 
-bool Graph::stop(const char* vname) {
+bool Graph::stop(const string& vname) {
 	for (vmap::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it) {
-		if (strcmp(it->first, vname) == 0) {
+		if (it->first == vname) {
 			it->second->stop();
 			return true;
 		}
@@ -134,6 +154,40 @@ void Graph::listen() {
 		case Cmd::CLOSE:
 			stop_all();
 			return;
+		case Cmd::LS:
+			if (!args.size() >= 1) {
+				cerr << "Too few arguments for ls command." << endl;
+			}
+			else {
+				for (int i = 0; i < args.size(); ++i) {
+					const char* arg = args[i];
+					string msg;
+					if (strcmp(arg, "vertex") == 0) {
+						for (vcmap::iterator it = m_vcreators.begin(); it != m_vcreators.end(); ++it) {
+							msg += it->first+"\n";
+						}
+						m_udp.send(msg.c_str(), msg.size());
+					}
+					else if (strcmp(arg, "edge")==0) {
+						for (ecmap::iterator it = m_ecreators.begin(); it != m_ecreators.end(); ++it) {
+							cout << it->first << endl;
+						}
+					}
+					else {
+						cerr << arg << "  is invalid argument for ls command." << endl;
+					}
+				}
+			}
+			break;
+		case Cmd::RUN:
+			if (args.size() == 0) {
+				run_all();
+			}
+			else {
+				for (int i = 0; i < args.size(); ++i) {
+					run(args[i]);
+				}
+			}
 		default:
 			break;
 		}
@@ -144,9 +198,9 @@ void Graph::set_port(int port) {
 	m_udp.set_port(port);
 }
 
-bool Graph::create_vertex(const char* vtype, const char* vname) {
+bool Graph::create_vertex(const string& vtype, const string& vname) {
 	for (vcmap::iterator it = m_vcreators.begin(); it != m_vcreators.end(); ++it) {
-		if (strcmp(it->first, vtype) == 0) {
+		if (it->first == vtype) {
 			//it->second(vname);
 			return true;
 		}
@@ -155,12 +209,11 @@ bool Graph::create_vertex(const char* vtype, const char* vname) {
 }
 
 template <typename T>
-void Graph::create_vertex(const char* vname) {
-	m_vertexes.insert(pair<const char*, Vertex*>(vname, dynamic_cast<Vertex*>(new T(vname))));
-	//m_vertexes.push_back(dynamic_cast<T>(new T(vname)));
+void Graph::create_vertex(const string& vname) {
+	m_vertexes.insert(pair<const string, Vertex*>(vname, dynamic_cast<Vertex*>(new T())));
 }
 
-bool Graph::create_edge(const char* etype, const char* ename) {
+bool Graph::create_edge(const string& etype, const string& ename) {
 	//for (int i = 0; i < m_edge_types.size(); ++i) {
 	//	if (strcmp(m_edge_types[i], etype) == 0) {
 	//		m_ecreators[i](ename);
@@ -171,8 +224,8 @@ bool Graph::create_edge(const char* etype, const char* ename) {
 }
 
 template <typename T>
-void Graph::create_edge(const char *ename) {
-	m_edges.push_back(dynamic_cast<T>(new T(name)));
+void Graph::create_edge(const string& ename) {
+	//m_edges.push_back(dynamic_cast<T>(new T(name)));
 }
 void foo(const char* s) {}
 
@@ -181,11 +234,7 @@ void foo(const char* s) {}
 //	m_vcreators.insert(vtype, foo);
 //}
 
-void Graph::run_all() {
-	for (vmap::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it) {
-		it->second->run();
-	}
-}
+
 
 //void Graph::run(const vector<char*>& vertexes) {
 //	for (int i = 0; i < m_vertexes.size(); ++i) {
@@ -271,6 +320,9 @@ RadarSignal::RadarSignal(int buf_size) : m_idx(0), m_buf_size(buf_size){
 RadarSignal::~RadarSignal() {
 	delete[] m_buf;
 	delete[] m_times;
+}
+
+CmdTerminal::CmdTerminal() {
 }
 
 bool CmdTerminal::process() {

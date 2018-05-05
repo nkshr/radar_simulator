@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <set>
+#include <string>
 
 #include "clock.h"
 #include "miscel.h"
@@ -13,8 +14,7 @@ class Edge;
 
 class Vertex {
 public:
-	Vertex(const char* vname);
-
+	Vertex();
 	void run();
 	void join();
 	void processing_loop();
@@ -23,7 +23,6 @@ public:
 	virtual bool process() = 0;
 
 protected:
-	char m_vname[1024];
 	bool m_brun;
 
 	thread m_th;
@@ -37,19 +36,18 @@ void foo(const char*s);
 class Edge {
 public:
 protected:
-	char m_vname[1024];
 	Vertex* m_to;
 	Vertex* m_from;
 };
 
-typedef void(Graph::*vcreator)(const char*);
-typedef void(*ecreator)(const char*);
+typedef void(Graph::*vcreator)(const string&);
+typedef void(*ecreator)(const string&);
 
-typedef map<const char*, Vertex*, string_comparator> vmap;
-typedef map<const char*, Edge*, string_comparator> emap;
+typedef map<const string, Vertex*> vmap;
+typedef map<const string, Edge*> emap;
 
-typedef map<const char*, vcreator, string_comparator> vcmap;
-typedef map<const char*, ecreator, string_comparator> ecmap;
+typedef map<const string, vcreator> vcmap;
+typedef map<const string, ecreator> ecmap;
 
 class Graph {
 public:
@@ -61,14 +59,16 @@ public:
 	
 	void set_port(int port);
 	
-	bool create_vertex(const char* vtype, const char* vname);
-	bool create_edge(const char* etype, const char* ename);
+	bool create_vertex(const string& vtype, const string& vname);
+	bool create_edge(const string& etype, const string& ename);
 
+	void run(const string& vname);
 	void run_all();
-	void run(const vector<char*>& vertetxes);
+	
+	//void run(const vector<char*>& vertetxes);
 
 	void stop_all();
-	bool stop(const char* vname);
+	bool stop(const string& vname);
 
 private:
 	char m_cmd_buf[config::buf_size];
@@ -80,13 +80,13 @@ private:
 	ecmap m_ecreators;
 
 	template <typename T>
-	void create_vertex(const char* vname);
+	void create_vertex(const string& vname);
 	template <typename T>
-	void create_edge(const char* ename);
+	void create_edge(const string& ename);
 
 	template <typename T>
-	void register_vertex(const char* vtype) {
-		m_vcreators.insert(pair<const char*, vcreator>(vtype, &Graph::create_vertex<T>));
+	void register_vertex(const string& vtype) {
+		m_vcreators.insert(pair<const string, vcreator>(vtype, &Graph::create_vertex<T>));
 	}
 
 	UDP m_udp;
@@ -107,7 +107,7 @@ private:
 
 class CmdTerminal : public Vertex{
 public:
-	CmdTerminal(const char* vname) : Vertex(vname){};
+	CmdTerminal();
 	bool process();
 	
 private:
