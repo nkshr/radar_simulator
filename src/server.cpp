@@ -120,8 +120,8 @@ int main()
 
 	graph.init();
 
-	graph.create_vertex("cmd_receiver", "cmd_rcvr");
-	//graph.create_vertex("simulator", "sim");
+	//graph.create_vertex("cmd_receiver", "cmd_rcvr");
+	graph.create_vertex("simulator", "sim");
 
 	graph.run();
 	//simulator.simulate( radar, objects);

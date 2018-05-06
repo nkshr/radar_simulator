@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <string>
 
 #include <WinSock2.h>
 
@@ -11,11 +12,13 @@ class UDP {
 private:
 	SOCKET m_sock;
 	fd_set m_read_fds;
-	sockaddr_in m_server, m_to, m_from;
+	sockaddr_in m_myself, m_to, m_from;
 	int m_to_len, m_from_len;
 	timeval m_timeout;
 
 	static WSADATA m_wsa;
+	static bool binit_win_sock;
+	static bool bclose_win_sock;
 
 public:
 	UDP();
@@ -28,52 +31,89 @@ public:
 
 	int receive(char* buf, int buf_size);
 	int send(const char* buf, int buf_size);
+	bool send_ok();
+	bool send_bad();
 
-	void set_port(int port);
-	void set_addr(const char* addr);
-	void set_timeout(int sec, int usec);
+	bool recieve_condition();
+
+	void set_myself(const char* addr, int port);
+	void set_sending_target(const char* addr, int port);
+	void set_recieving_target(const char* addr, int port);
+	void UDP::set_timeout(int sec, int usec);
 };
 
 enum Cmd {
 	VERTEX,
 	EDGE,
-	VSET,
-	ESET,
+	SET,
 	RUN,
 	STOP,
 	CLOSE,
 	LS,
+	INVALID,
 	CMD_END
 };
 
+Cmd str_to_cmd(const string& str);
+
+void split(const string& buf, const string& delimes, vector<string>& toks);
+
+const static vector<string> cmd_strs = {"vertex", "edge", "set",  "run", "stop", "close", "ls"};
+
 class CmdParser {
 public:
-
-	CmdParser() {};
-	bool parse();
-	void encode(char* &buf, int& buf_size);
-	bool decode(char* buf);
-
-	int get_buf_size() const;
-	char* get_buf();
-	
+	void parse(const string& buf);
 	Cmd get_cmd() const;
-	char* get_vertex_type() const;
-	char* get_vertex_id() const;
-	const vector<char*>& get_args() const;
 
-	void set_buf(char* buf, int buf_size);
-	bool set_cmd(char* cmd);
+	const vector<string>& get_args() const;
 
 private:
+	Cmd m_cmd;
+	vector<string> m_args;
+};
+
+const static string cmd_delims = " ";
+
+class CmdSender {
+public:
+
+	CmdSender() {};
+	
+	/*char* get_vertex_type() const;
+	char* get_vertex_id() const;*/
+	const vector<string>& get_vtypes() const;
+	const vector<string>& get_vnames() const;
+	const vector<string>& get_etypes() const;
+	const vector<string>& get_enames() const;
+
+
+	bool request(Cmd cmd, const vector<string>& args);
+	bool listen();
+
+	const string& get_err_msg() const;
+
+private:
+	string m_err_msg;
+	string m_delims;
+
 	char* m_buf;
 	char* encoded_data;
+	char m_smsg[config::buf_size];
+	char m_rmsg[config::buf_size];
 
 	int m_buf_size;
 	int m_args_size;
-	vector<char*> m_args;
-	vector<char*> m_cmds;
-	Cmd m_cmd;
+
+	vector<string> m_vtypes;
+	vector<string> m_vnames;
+	
+	vector<string> m_etypes;
+	vector<string> m_enames;
+
+	vector<string> m_cmd_strs;
+
+
+	UDP m_udp;
 };
 
 struct string_comparator {

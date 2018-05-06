@@ -48,11 +48,14 @@ void Vertex::stop() {
 	m_brun = false;
 }
 
+Graph::Graph() {
+	m_udp.set_myself("127.0.0.1", 5000);
+}
+
 void Graph::init() {
 	UDP::init_win_sock();
 	m_udp.init();
 
-	register_vertex<CmdTerminal>("cmd_termial");
 	register_vertex<Simulator>("simulator");
 }
 
@@ -96,29 +99,32 @@ bool Graph::stop(const string& vname) {
 }
 
 void Graph::listen() {
-	char err_msg[config::buf_size];
+	string smsg;
+
+	char rmsg[config::buf_size];
 
 	while (true) {
-		m_udp.receive(m_cp.get_buf(), m_cp.get_buf_size());
+		m_udp.receive(rmsg, config::buf_size);
 
-		if (!m_cp.parse()) {
-			char emsg[config::buf_size];
-			sprintf(emsg, "Invaliid command : %s", m_cp.get_buf());
-			m_udp.send(emsg, config::buf_size);
-		}
+		m_cp.parse(rmsg);
+		
+		if (m_cp.get_cmd() == Cmd::INVALID)
+			m_udp.send("error", 6);
 
-		m_udp.send("success", 8);
+		const vector<string> args = m_cp.get_args();
 
-		const vector<char*> args = m_cp.get_args();
+		smsg.clear();
 
 		switch (m_cp.get_cmd()) {
 		case Cmd::VERTEX:
 			if (args.size() > 2) {
-				const char* vname = args[0];
-				const char* vtype = args[1];
-				if (!create_vertex(args[0], args[1])) {
-					sprintf(err_msg, "Couldn't create a vertex : %s %s\n", vname, vtype);
-					m_udp.send(err_msg, config::buf_size);
+				const string& vname = args[0];
+				const string& vtype = args[1];
+				if (!create_vertex(vname, vtype)) {
+					stringstream ss;
+					ss << "Couldn't create a vertex : " << vname << " " << vtype << endl;
+					smsg = ss.str();
+					m_udp.send(smsg.c_str(), config::buf_size);
 				}
 			}
 			else {
@@ -127,12 +133,14 @@ void Graph::listen() {
 			break;
 		case Cmd::EDGE:
 			if (args.size() > 2) {
-				const char* etype = args[0];
-				const char* ename = args[1];
+				const string& etype = args[0];
+				const string& ename = args[1];
 
 				if (!create_edge(args[0], args[1])) {
-					sprintf(err_msg, "Couldn't create a edge : %s %s\n", args[0], args[1]);
-					m_udp.send(err_msg, config::buf_size);
+					stringstream ss;
+					ss << "Couldn't create a edge : " << etype << " " << ename;
+					smsg = ss.str();
+					m_udp.send(msg.c_str(), msg.size());
 				}
 			}
 			else {
@@ -155,29 +163,24 @@ void Graph::listen() {
 			stop_all();
 			return;
 		case Cmd::LS:
-			if (!args.size() >= 1) {
-				cerr << "Too few arguments for ls command." << endl;
+			if (args.size() == 0) {
+				cerr << "Too few arguments for ls" << endl;
+				break;
 			}
-			else {
-				for (int i = 0; i < args.size(); ++i) {
-					const char* arg = args[i];
-					string msg;
-					if (strcmp(arg, "vertex") == 0) {
-						for (vcmap::iterator it = m_vcreators.begin(); it != m_vcreators.end(); ++it) {
-							msg += it->first+"\n";
-						}
-						m_udp.send(msg.c_str(), msg.size());
-					}
-					else if (strcmp(arg, "edge")==0) {
-						for (ecmap::iterator it = m_ecreators.begin(); it != m_ecreators.end(); ++it) {
-							cout << it->first << endl;
-						}
-					}
-					else {
-						cerr << arg << "  is invalid argument for ls command." << endl;
-					}
+			else if (args[0] == "vertex") {
+				for (vcmap::iterator it = m_vcreators.begin(); it != m_vcreators.end(); ++it) {
+					smsg += it->first + "\n";
 				}
 			}
+			else if(args[0] == "edge"){
+				for (ecmap::iterator it = m_ecreators.begin(); it != m_ecreators.end(); ++it) {
+					smsg += it->first + "\n";
+				}
+			}
+			else {
+				smsg = "Invalid arguent for ls. : " + args[0];
+			}
+			m_udp.send(smsg.c_str(), smsg.size());
 			break;
 		case Cmd::RUN:
 			if (args.size() == 0) {
@@ -192,10 +195,13 @@ void Graph::listen() {
 			break;
 		}
 	}
+
+	m_udp.send("success", 8);
+
 }
 
 void Graph::set_port(int port) {
-	m_udp.set_port(port);
+	//m_udp.set_port(port);
 }
 
 bool Graph::create_vertex(const string& vtype, const string& vname) {
@@ -248,69 +254,6 @@ void foo(const char* s) {}
 //	}
 //}
 
-bool CmdReceiver::process() {
-	const long long tpc = static_cast<int>(round(m_clock.get_time_per_clock() * 0.001));
-
-	m_udp.set_timeout(0, tpc);
-	m_udp.receive(m_cp.get_buf(), m_cp.get_buf_size());
-	
-	if (!m_cp.parse()) {
-		char emsg[config::buf_size];
-		sprintf(emsg, "Invaliid command : %s", m_cp.get_buf());
-		m_udp.send(emsg, config::buf_size);
-	}
-
-	m_udp.send("success", 8);
-
-	const vector<char*> args = m_cp.get_args();
-
-	switch (m_cp.get_cmd()) {
-	case Cmd::VERTEX:
-		if (args.size() > 2) {
-			const char* vname = args[0];
-			const char* vtype = args[1];
-			if (!m_graph->create_vertex(args[0], args[1])) {
-				sprintf(m_err_msg, "Couldn't create a vertex : %s %s\n", vname, vtype);
-				m_udp.send(m_err_msg, config::buf_size);
-				return true;
-			}
-		}
-		else {
-			cerr << "Too few arguments for vertex command." << endl;
-		}
-
-		break;
-	case Cmd::EDGE:
-		if (args.size() > 2) {
-			const char* etype = args[0];
-			const char* ename = args[1];
-
-			if (!m_graph->create_edge(args[0], args[1])) {
-				sprintf(m_err_msg, "Couldn't create a edge : %s %s\n", args[0], args[1]);
-				m_udp.send(m_err_msg, config::buf_size);
-				return true;
-			}
-		}
-		else {
-			cerr << "Too few arguments for edge command." << endl;
-		}
-
-		break;
-	case Cmd::STOP:
-		if (!args.size()) {
-			m_graph->stop_all();
-		}
-	default:
-		break;
-	}
-
-	
-	return true;
-}
-
-void CmdReceiver::set_port(int port) {
-	m_udp.set_port(port);
-}
 
 RadarSignal::RadarSignal(int buf_size) : m_idx(0), m_buf_size(buf_size){
 	m_buf = new double[m_buf_size];
@@ -320,23 +263,6 @@ RadarSignal::RadarSignal(int buf_size) : m_idx(0), m_buf_size(buf_size){
 RadarSignal::~RadarSignal() {
 	delete[] m_buf;
 	delete[] m_times;
-}
-
-CmdTerminal::CmdTerminal() {
-}
-
-bool CmdTerminal::process() {
-	cin.getline(m_buf, config::buf_size);
-	
-	m_udp.send(m_buf, config::buf_size);
-
-	m_udp.receive(m_rep, config::buf_size);
-
-	if (!strcmp(m_rep, "success")) {
-		cerr << m_rep << endl;
-	}
-	
-	return true;
 }
 
 void RadarSignal::set_signal(double d, long long t) {

@@ -51,6 +51,8 @@ typedef map<const string, ecreator> ecmap;
 
 class Graph {
 public:
+	Graph();
+
 	void init();
 	void run();
 
@@ -91,31 +93,6 @@ private:
 
 	UDP m_udp;
 	CmdParser m_cp;
-};
-
-class CmdReceiver : public Vertex {
-public:
-	bool process();
-
-	void set_port(int port);
-
-private:
-	CmdParser m_cp;
-	UDP m_udp;
-	char m_err_msg[config::buf_size];
-};
-
-class CmdTerminal : public Vertex{
-public:
-	CmdTerminal();
-	bool process();
-	
-private:
-	char m_buf[config::buf_size];
-	char m_rep[config::buf_size];
-
-	CmdParser m_cmd_parser;
-	UDP m_udp;
 };
 
 class RadarSignal : protected Edge{

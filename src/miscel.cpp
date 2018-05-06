@@ -1,16 +1,25 @@
 #include <iostream>
+#include <sstream>
 
 #include "miscel.h"
 
 using namespace std;
 
 WSADATA UDP::m_wsa;
+bool binit_win_sock = false;
+bool bclose_win_sock = false;
 
 UDP::UDP() {
-	m_server.sin_family = AF_INET;
-	m_server.sin_addr.s_addr = INADDR_ANY;
-	set_port(88);
-	set_addr("192.168.128.1");
+	m_myself.sin_family = AF_INET;
+	m_myself.sin_addr.s_addr = INADDR_ANY;
+	m_myself.sin_port = htons(5000);
+
+	m_to = m_myself;
+	m_to_len = sizeof(m_to);
+
+	m_from = m_myself;
+	m_from_len = sizeof(m_from);
+
 	set_timeout(10, 0);
 }
 
@@ -33,12 +42,12 @@ bool UDP::close_win_sock() {
 
 
 bool UDP::init() {
-	if ((m_sock = socket(m_server.sin_family, SOCK_DGRAM, 0)) == INVALID_SOCKET){
+	if ((m_sock = socket(m_myself.sin_family, SOCK_DGRAM, 0)) == INVALID_SOCKET){
 		cerr << "Socket creationn error : " << WSAGetLastError() << endl;
 		return false;
 	}
 
-	if (bind(m_sock, (sockaddr*)&m_server, sizeof(m_server)) == SOCKET_ERROR) {
+	if (bind(m_sock, (sockaddr*)&m_myself, sizeof(m_myself)) == SOCKET_ERROR) {
 		cerr << "Binding error : " << WSAGetLastError() << endl;
 		return false;
 	}
@@ -54,11 +63,11 @@ int UDP::receive(char * buf, int buf_size) {
 
 	if (num_fds == 0) {
 		cerr << "Time limit(" << m_timeout.tv_sec << "sec " << m_timeout.tv_usec << "usec) " << "expired." << endl;
-		return false;
+		return -1;
 	}
 	else if (num_fds == SOCKET_ERROR) {
 		cerr << "Error occured in select function() : " << WSAGetLastError() << endl;
-		return false;
+		return -1;
 	}
 
 	int recv_len;
@@ -73,7 +82,7 @@ int UDP::receive(char * buf, int buf_size) {
 
 int UDP::send(const char * buf, int buf_size) {
 	int ssize;
-	ssize = sendto(m_sock, buf, buf_size, 0, (sockaddr*)&m_to.sin_addr, m_to_len);
+	ssize = sendto(m_sock, buf, buf_size, 0, (sockaddr*)&m_to, m_to_len);
 	if (ssize == SOCKET_ERROR)
 	{
 		cerr << "Sending error : " << WSAGetLastError() << endl;
@@ -93,76 +102,111 @@ bool UDP::close() {
 	return true;
 }
 
-void UDP::set_port(int port) {
-	m_server.sin_port = htons(port);
+void UDP::set_myself(const char* addr, int port) {
+	if (addr == NULL)
+		m_myself.sin_addr.s_addr = INADDR_ANY;
+	else
+		m_myself.sin_addr.s_addr = inet_addr(addr);
+	m_myself.sin_port = htons(port);
 }
 
-void UDP::set_addr(const char* addr) {
-	m_to.sin_addr.S_un.S_addr = inet_addr(addr);
+void UDP::set_sending_target(const char* addr, int port) {
+	if (addr == NULL)
+		m_to.sin_addr.s_addr = INADDR_ANY;
+	else
+		m_to.sin_addr.s_addr = inet_addr(addr);
+	m_to.sin_port = htons(port);
 }
+
+void UDP::set_recieving_target(const char* addr, int port) {
+	if (addr == NULL)
+		m_from.sin_addr.s_addr = INADDR_ANY;
+	else
+		m_from.sin_addr.s_addr = inet_addr(addr);
+	m_from.sin_port = htons(port);
+}
+
 
 void UDP::set_timeout(int sec, int usec) {
 	m_timeout.tv_sec = sec;
 	m_timeout.tv_usec = usec;
 }
 
-bool CmdParser::parse() {
-	char* delims = " \n";
-	char* tok = strtok(m_buf, delims);
+void CmdParser::parse(const string& buf) {
+	vector<string> toks;
+	split(buf, cmd_delims, toks);
 
-	if (!set_cmd(tok)) {
-		cerr << "Unrecognized cmd : " << tok << endl;
-		return false;
-	}
-
-	m_args.clear();
-	while (true) {
-		tok = strtok(NULL, delims);
-		m_args.push_back(tok);
-	}
-
-	return true;
-}
-
-void CmdParser::encode(char* &buf, int& buf_size) {
-	buf_size = 2 + sizeof(Cmd) + 2 * (m_args.size() + m_args_size); 
-	buf = new char[buf_size];
-
-	memcpy(static_cast<void*>(buf), static_cast<void*>("\c"), 2);
-
-	char* ptr = buf + 2;
-	const int cmd_size = sizeof(Cmd);
-
-	memcpy(static_cast<void*>(ptr), static_cast<void*>(&m_cmd), cmd_size);
-	ptr += cmd_size;
-
-	for (int i = 0; i < m_args.size(); ++i) {
-		memcpy(static_cast<void*>(ptr), static_cast<void*>(m_args[i]), strlen(m_args[i]));
-	}
-}
-
-int CmdParser::get_buf_size() const {
-	return config::buf_size;
-}
-
-char* CmdParser::get_buf(){
-	return m_buf;
+	m_cmd = str_to_cmd(toks[0]);
+	m_args.assign(toks.begin() + 1, toks.end());
 }
 
 Cmd CmdParser::get_cmd() const {
 	return m_cmd;
 }
-bool CmdParser::set_cmd(char* cmd) {
-	for (int i = 0; i < CMD_END; ++i) {
-		if (strcmp(cmd, m_cmds[i]) == 0) {
-			m_cmd = static_cast<Cmd>(i);
-			return true;
-		}
-	}
-	
-	return false;
+
+const vector<string>& CmdParser::get_args() const {
+	return m_args;
 }
 
-const vector<char*>& CmdParser::get_args() const {
-	return m_args;
+bool CmdSender::request(Cmd cmd, const vector<string>& args) {
+	m_udp.send(m_smsg, config::buf_size]);
+	m_udp.receive(m_rmsg, config::buf_size);
+
+	if (!strcmp(m_rmsg, "success") == 0) {
+		return false;
+	}
+
+	m_udp.receive(m_rmsg, config::buf_size);
+
+	switch (cmd) {
+	case LS:
+		if (args[0] == "vtype") {
+			split(m_rmsg, m_delims, m_vtypes);
+		}
+		else if (args[0] == "vname") {
+			split(m_rmsg, m_delims, m_vnames);
+		}
+		else if (args[0] == "etype") {
+			split(m_rmsg, m_delims, m_etypes);
+		}
+		else if (args[0] == "ename"){
+			split(m_rmsg, m_delims, m_enames);
+		}
+		break;
+	}
+}
+
+Cmd str_to_cmd(const string& str) {
+	for (int i = 0; i < cmd_strs.size(); ++i) {
+		if (str == cmd_strs[i]) {
+			return static_cast<Cmd>(i);
+		}
+	}
+
+	return Cmd::INVALID;
+}
+
+void split(const string &buf, const string& delims, vector<string>& toks) {
+	toks.clear();
+	stringstream ss(buf);
+	string tok;
+	for (char c : buf) {
+		bool found = false;
+		for (char d : delims) {
+			if (c == d) {
+				found = true;
+				if(!tok.empty())
+					toks.push_back(tok);
+				tok.clear();
+				break;
+			}
+		}
+	
+		if(!found)
+			tok += c;
+	}
+
+	if (!tok.empty()) {
+		toks.push_back(tok);
+	}
 }
