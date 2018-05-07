@@ -109,7 +109,7 @@ void Graph::listen() {
 		m_cp.parse(rmsg);
 		
 		if (m_cp.get_cmd() == Cmd::INVALID)
-			m_udp.send("error", 6);
+			m_udp.send_back(cmd_error_str.c_str(), cmd_error_str.size());
 
 		const vector<string> args = m_cp.get_args();
 
@@ -121,14 +121,21 @@ void Graph::listen() {
 				const string& vname = args[0];
 				const string& vtype = args[1];
 				if (!create_vertex(vname, vtype)) {
+					m_udp.send_back(cmd_error_str.c_str(), cmd_error_str.size());
+
 					stringstream ss;
-					ss << "Couldn't create a vertex : " << vname << " " << vtype << endl;
+					ss << "Couldn't create a vertex : " << vname << " " << vtype;
 					smsg = ss.str();
-					m_udp.send(smsg.c_str(), config::buf_size);
+					m_udp.send_back(smsg.c_str(), smsg.size());
+				}
+				else {
+					m_udp.send_back(cmd_success_str.c_str(), cmd_success_str.size());
 				}
 			}
 			else {
-				cerr << "Too few arguments for vertex command." << endl;
+				m_udp.send_back(cmd_error_str.c_str(), cmd_error_str.size());
+				smsg =  "Too few arguments for vertex command.";
+				m_udp.send_back(smsg.c_str(), smsg.size());
 			}
 			break;
 		case Cmd::EDGE:
@@ -137,23 +144,32 @@ void Graph::listen() {
 				const string& ename = args[1];
 
 				if (!create_edge(args[0], args[1])) {
+					m_udp.send_back(cmd_error_str.c_str(), cmd_error_str.size());
+
 					stringstream ss;
 					ss << "Couldn't create a edge : " << etype << " " << ename;
 					smsg = ss.str();
-					m_udp.send(msg.c_str(), msg.size());
+					m_udp.send_back(smsg.c_str(), smsg.size());
+				}
+				else {
+					m_udp.send_back(cmd_success_str.c_str(), cmd_success_str.size());
 				}
 			}
 			else {
-				cerr << "Too few arguments for edge command." << endl;
+				m_udp.send_back(cmd_error_str.c_str(), cmd_error_str.size());
+				smsg = "Too few arguments for edge command.";
+				m_udp.send_back(smsg.c_str(), smsg.size());
 			}
 			break;
 		case Cmd::STOP:
 			if (!args.size()) {
+				m_udp.send_back(cmd_success_str.c_str(), cmd_success_str.size());
 				stop_all();
 			}
 			else {
 				for (int i = 0; i < args.size(); ++i) {
 					if (!stop(args[i])) {
+						m_udp.send_back(cmd_success_str.c_str(), cmd_success_str.size());
 						cerr << "Couldn't find vertex " << args[i] << "." << endl;
 					}
 				}

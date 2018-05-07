@@ -31,10 +31,7 @@ public:
 
 	int receive(char* buf, int buf_size);
 	int send(const char* buf, int buf_size);
-	bool send_ok();
-	bool send_bad();
-
-	bool recieve_condition();
+	int send_back(const char* buf, int buf_size);
 
 	void set_myself(const char* addr, int port);
 	void set_sending_target(const char* addr, int port);
@@ -50,11 +47,15 @@ enum Cmd {
 	STOP,
 	CLOSE,
 	LS,
+	END,
 	INVALID,
-	CMD_END
 };
 
+const static string cmd_error_str = "cmd_error";
+const static string cmd_success_str = "cmd_success";
+
 Cmd str_to_cmd(const string& str);
+string cmd_to_str(const Cmd& cmd);
 
 void split(const string& buf, const string& delimes, vector<string>& toks);
 
@@ -74,7 +75,7 @@ private:
 
 const static string cmd_delims = " ";
 
-class CmdSender {
+class CmdSender : public UDP{
 public:
 
 	CmdSender() {};
@@ -88,7 +89,6 @@ public:
 
 
 	bool request(Cmd cmd, const vector<string>& args);
-	bool listen();
 
 	const string& get_err_msg() const;
 
@@ -96,13 +96,7 @@ private:
 	string m_err_msg;
 	string m_delims;
 
-	char* m_buf;
-	char* encoded_data;
-	char m_smsg[config::buf_size];
 	char m_rmsg[config::buf_size];
-
-	int m_buf_size;
-	int m_args_size;
 
 	vector<string> m_vtypes;
 	vector<string> m_vnames;
@@ -111,8 +105,18 @@ private:
 	vector<string> m_enames;
 
 	vector<string> m_cmd_strs;
+};
 
+class CmdReceiver : public UDP, public CmdParser{
+public:
+	CmdReceiver() {};
 
+private:
+	char m_rmsg[config::buf_size];
+
+	int send_err_msg(const string& msg);
+
+	CmdParser m_cp;
 	UDP m_udp;
 };
 

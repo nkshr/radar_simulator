@@ -92,6 +92,17 @@ int UDP::send(const char * buf, int buf_size) {
 	return ssize;
 }
 
+int UDP::send_back(const char * buf, int buf_size) {
+	int ssize;
+	ssize = sendto(m_sock, buf, buf_size, 0, (sockaddr*)&m_from, m_from_len);
+	if (ssize == SOCKET_ERROR)
+	{
+		cerr << "Sending error : " << WSAGetLastError() << endl;
+		return -1;
+	}
+
+	return ssize;
+}
 
 
 bool UDP::close() {
@@ -149,14 +160,20 @@ const vector<string>& CmdParser::get_args() const {
 }
 
 bool CmdSender::request(Cmd cmd, const vector<string>& args) {
-	m_udp.send(m_smsg, config::buf_size]);
-	m_udp.receive(m_rmsg, config::buf_size);
+	string smsg = cmd_to_str(cmd);
+	for (vector<string>::const_iterator it = args.begin(); it != args.end(); ++it) {
+		smsg += " " + (*it);
+	}
 
-	if (!strcmp(m_rmsg, "success") == 0) {
+	send(smsg.c_str(), smsg.size());
+	receive(m_rmsg, config::buf_size);
+
+	if (strcmp(m_rmsg, "error") == 0) {
+		m_err_msg = m_rmsg;
 		return false;
 	}
 
-	m_udp.receive(m_rmsg, config::buf_size);
+	receive(m_rmsg, config::buf_size);
 
 	switch (cmd) {
 	case LS:
@@ -184,6 +201,15 @@ Cmd str_to_cmd(const string& str) {
 	}
 
 	return Cmd::INVALID;
+}
+
+string cmd_to_str(const Cmd& cmd) {
+	for (int i = 0; i < Cmd::END; ++i) {
+		if (static_cast<int>(cmd) == i) {
+			return cmd_strs[i];
+		}
+	}
+	return "";
 }
 
 void split(const string &buf, const string& delims, vector<string>& toks) {
