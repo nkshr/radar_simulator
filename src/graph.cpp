@@ -21,8 +21,8 @@ mutex mtx;
 Vertex::Vertex() : m_brun(false){
 }
 
-void Vertex::run() {
-	m_th = thread(&Vertex::run, this);
+void Vertex::start() {
+	m_th = thread(&Vertex::processing_loop, this);
 }
 
 void Vertex::join() {
@@ -49,18 +49,23 @@ void Vertex::stop() {
 }
 
 Graph::Graph() {
-	m_udp.set_myself("127.0.0.1", 5000);
+	m_cmd_receiver.set_connection("", 5000);
 }
 
-void Graph::init() {
-	UDP::init_win_sock();
-	m_udp.init();
+bool Graph::init() {
+	if(!UDP::init_win_sock())
+		return false;
+
+	if(!m_cmd_receiver.init())
+		return false;
 
 	register_vertex<Simulator>("simulator");
+
+	return true;
 }
 
 void Graph::run() {
-	run_all();
+	start_all();
 	listen();
 
 	for (vmap::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it) {
@@ -68,17 +73,19 @@ void Graph::run() {
 	}
 }
 
-void Graph::run(const string& vname) {
+bool Graph::start(const string& vname) {
 	for (vmap::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it) {
 		if (it->first == vname) {
-			it->second->run();
-			return;
+			it->second->start();
+			return true;
 		}
 	}
+
+	return false;
 }
-void Graph::run_all() {
+void Graph::start_all() {
 	for (vmap::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it) {
-		it->second->run();
+		it->second->start();
 	}
 }
 
@@ -99,43 +106,37 @@ bool Graph::stop(const string& vname) {
 }
 
 void Graph::listen() {
-	string smsg;
-
-	char rmsg[config::buf_size];
-
 	while (true) {
-		m_udp.receive(rmsg, config::buf_size);
+		string smsg;
+		char rmsg[config::buf_size];
+		bool success = false;
 
-		m_cp.parse(rmsg);
+		if (!m_cmd_receiver.listen()) {
+			continue;
+		}
 		
-		if (m_cp.get_cmd() == Cmd::INVALID)
-			m_udp.send_back(cmd_error_str.c_str(), cmd_error_str.size());
-
-		const vector<string> args = m_cp.get_args();
+		const Cmd cmd = m_cmd_receiver.get_cmd();
+		const vector<string> args = m_cmd_receiver.get_args();
 
 		smsg.clear();
 
-		switch (m_cp.get_cmd()) {
+		switch (m_cmd_receiver.get_cmd()) {
 		case Cmd::VERTEX:
 			if (args.size() > 2) {
 				const string& vname = args[0];
 				const string& vtype = args[1];
 				if (!create_vertex(vname, vtype)) {
-					m_udp.send_back(cmd_error_str.c_str(), cmd_error_str.size());
-
 					stringstream ss;
 					ss << "Couldn't create a vertex : " << vname << " " << vtype;
 					smsg = ss.str();
-					m_udp.send_back(smsg.c_str(), smsg.size());
 				}
 				else {
-					m_udp.send_back(cmd_success_str.c_str(), cmd_success_str.size());
+					success = true;
 				}
 			}
 			else {
-				m_udp.send_back(cmd_error_str.c_str(), cmd_error_str.size());
 				smsg =  "Too few arguments for vertex command.";
-				m_udp.send_back(smsg.c_str(), smsg.size());
+				m_cmd_receiver.send_error(smsg);
 			}
 			break;
 		case Cmd::EDGE:
@@ -144,44 +145,39 @@ void Graph::listen() {
 				const string& ename = args[1];
 
 				if (!create_edge(args[0], args[1])) {
-					m_udp.send_back(cmd_error_str.c_str(), cmd_error_str.size());
-
 					stringstream ss;
 					ss << "Couldn't create a edge : " << etype << " " << ename;
 					smsg = ss.str();
-					m_udp.send_back(smsg.c_str(), smsg.size());
 				}
 				else {
-					m_udp.send_back(cmd_success_str.c_str(), cmd_success_str.size());
+					success = true;
 				}
 			}
 			else {
-				m_udp.send_back(cmd_error_str.c_str(), cmd_error_str.size());
 				smsg = "Too few arguments for edge command.";
-				m_udp.send_back(smsg.c_str(), smsg.size());
 			}
 			break;
 		case Cmd::STOP:
 			if (!args.size()) {
-				m_udp.send_back(cmd_success_str.c_str(), cmd_success_str.size());
 				stop_all();
+				success = true;
 			}
 			else {
 				for (int i = 0; i < args.size(); ++i) {
+
 					if (!stop(args[i])) {
-						m_udp.send_back(cmd_success_str.c_str(), cmd_success_str.size());
-						cerr << "Couldn't find vertex " << args[i] << "." << endl;
+						smsg = "Couldn't find vertex " +  args[i] + ".";
 					}
 				}
 			}
 			break;
 		case Cmd::CLOSE:
 			stop_all();
+			success = true;
 			return;
 		case Cmd::LS:
 			if (args.size() == 0) {
-				cerr << "Too few arguments for ls" << endl;
-				break;
+				smsg =  "Too few arguments for ls";
 			}
 			else if (args[0] == "vertex") {
 				for (vcmap::iterator it = m_vcreators.begin(); it != m_vcreators.end(); ++it) {
@@ -196,23 +192,28 @@ void Graph::listen() {
 			else {
 				smsg = "Invalid arguent for ls. : " + args[0];
 			}
-			m_udp.send(smsg.c_str(), smsg.size());
 			break;
-		case Cmd::RUN:
+		case Cmd::START:
 			if (args.size() == 0) {
-				run_all();
+				start_all();
 			}
 			else {
 				for (int i = 0; i < args.size(); ++i) {
-					run(args[i]);
+					if (!start(args[i])) {
+						break;
+					}
 				}
 			}
+			break;
 		default:
 			break;
 		}
-	}
 
-	m_udp.send("success", 8);
+		if (success)
+			m_cmd_receiver.send_success(smsg);
+		else
+			m_cmd_receiver.send_error(smsg);
+	}
 
 }
 

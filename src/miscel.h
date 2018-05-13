@@ -43,7 +43,7 @@ enum Cmd {
 	VERTEX,
 	EDGE,
 	SET,
-	RUN,
+	START,
 	STOP,
 	CLOSE,
 	LS,
@@ -61,25 +61,19 @@ void split(const string& buf, const string& delimes, vector<string>& toks);
 
 const static vector<string> cmd_strs = {"vertex", "edge", "set",  "run", "stop", "close", "ls"};
 
-class CmdParser {
-public:
+struct CmdParser {
+	Cmd cmd;
+	vector<string> args;
 	void parse(const string& buf);
-	Cmd get_cmd() const;
-
-	const vector<string>& get_args() const;
-
-private:
-	Cmd m_cmd;
-	vector<string> m_args;
 };
 
 const static string cmd_delims = " ";
 
-class CmdSender : public UDP{
+class CmdSender {
 public:
-
 	CmdSender() {};
-	
+	bool init();
+
 	/*char* get_vertex_type() const;
 	char* get_vertex_id() const;*/
 	const vector<string>& get_vtypes() const;
@@ -90,7 +84,7 @@ public:
 
 	bool request(Cmd cmd, const vector<string>& args);
 
-	const string& get_err_msg() const;
+	const string& get_error_msg() const;
 
 private:
 	string m_err_msg;
@@ -105,19 +99,32 @@ private:
 	vector<string> m_enames;
 
 	vector<string> m_cmd_strs;
+
+	UDP m_udp;
 };
 
-class CmdReceiver : public UDP, public CmdParser{
+class CmdReceiver {
 public:
 	CmdReceiver() {};
+	bool init();
+	bool listen();
+
+	bool send_error(const string& msg);
+	bool send_success(const string& msg);
+
+	void set_connection(const string& addr, int port);
+
+	Cmd get_cmd() const;
+	const vector<string>& get_args() const;
 
 private:
 	char m_rmsg[config::buf_size];
 
-	int send_err_msg(const string& msg);
 
-	CmdParser m_cp;
+
+
 	UDP m_udp;
+	CmdParser m_cp;
 };
 
 struct string_comparator {

@@ -147,16 +147,13 @@ void CmdParser::parse(const string& buf) {
 	vector<string> toks;
 	split(buf, cmd_delims, toks);
 
-	m_cmd = str_to_cmd(toks[0]);
-	m_args.assign(toks.begin() + 1, toks.end());
+	cmd = str_to_cmd(toks[0]);
+	args.assign(toks.begin() + 1, toks.end());
 }
 
-Cmd CmdParser::get_cmd() const {
-	return m_cmd;
-}
 
-const vector<string>& CmdParser::get_args() const {
-	return m_args;
+bool CmdSender::init() {
+	return m_udp.init();
 }
 
 bool CmdSender::request(Cmd cmd, const vector<string>& args) {
@@ -165,15 +162,15 @@ bool CmdSender::request(Cmd cmd, const vector<string>& args) {
 		smsg += " " + (*it);
 	}
 
-	send(smsg.c_str(), smsg.size());
-	receive(m_rmsg, config::buf_size);
+	m_udp.send(smsg.c_str(), smsg.size());
+	m_udp.receive(m_rmsg, config::buf_size);
 
 	if (strcmp(m_rmsg, "error") == 0) {
 		m_err_msg = m_rmsg;
 		return false;
 	}
 
-	receive(m_rmsg, config::buf_size);
+	m_udp.receive(m_rmsg, config::buf_size);
 
 	switch (cmd) {
 	case LS:
@@ -235,4 +232,53 @@ void split(const string &buf, const string& delims, vector<string>& toks) {
 	if (!tok.empty()) {
 		toks.push_back(tok);
 	}
+}
+
+ bool CmdReceiver::init() {
+	return m_udp.init();
+}
+
+void CmdReceiver::set_connection(const string& addr, int port) {
+	m_udp.set_myself(addr.c_str(), port);
+}
+
+bool CmdReceiver::send_error(const string& msg) {
+	if(m_udp.send_back(cmd_error_str.c_str(), cmd_error_str.size()) < 0)
+		return false;
+
+	if (m_udp.send_back(msg.c_str(), msg.size()) < 0) {
+		return false;
+	}
+	return true;
+}
+
+bool CmdReceiver::send_success(const string& msg) {
+	if (m_udp.send_back(cmd_success_str.c_str(), cmd_success_str.size()) < 0)
+		return false;
+
+	if (m_udp.send_back(msg.c_str(), msg.size()) < 0) {
+		return false;
+	}
+	return true;
+}
+
+bool CmdReceiver::listen() {
+	if (m_udp.receive(m_rmsg, sizeof(m_rmsg)) <= 0) {
+		return false;
+	}
+	
+	m_cp.parse(m_rmsg);
+
+	if (m_cp.cmd == Cmd::INVALID) {
+		m_udp.send_back(cmd_error_str.c_str(), cmd_error_str.size());
+		return false;
+	}
+}
+
+Cmd CmdReceiver::get_cmd() const {
+	return m_cp.cmd;
+}
+
+const vector<string>& CmdReceiver::get_args() const {
+	return m_cp.args;
 }

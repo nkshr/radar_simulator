@@ -15,7 +15,7 @@ class Edge;
 class Vertex {
 public:
 	Vertex();
-	void run();
+	void start();
 	void join();
 	void processing_loop();
 	void stop();
@@ -53,7 +53,7 @@ class Graph {
 public:
 	Graph();
 
-	void init();
+	bool init();
 	void run();
 
 	void remove();
@@ -64,8 +64,8 @@ public:
 	bool create_vertex(const string& vtype, const string& vname);
 	bool create_edge(const string& etype, const string& ename);
 
-	void run(const string& vname);
-	void run_all();
+	bool start(const string& vname);
+	void start_all();
 	
 	//void run(const vector<char*>& vertetxes);
 
@@ -91,8 +91,7 @@ private:
 		m_vcreators.insert(pair<const string, vcreator>(vtype, &Graph::create_vertex<T>));
 	}
 
-	UDP m_udp;
-	CmdParser m_cp;
+	CmdReceiver m_cmd_receiver;
 };
 
 class RadarSignal : protected Edge{
