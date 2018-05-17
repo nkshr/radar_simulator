@@ -33,9 +33,9 @@ public:
 	int send(const char* buf, int buf_size);
 	int send_back(const char* buf, int buf_size);
 
-	void set_myself(const char* addr, int port);
-	void set_sending_target(const char* addr, int port);
-	void set_recieving_target(const char* addr, int port);
+	void set_myself(const string& addr, int port);
+	void set_sending_target(const string& addr, int port);
+	void set_recieving_target(const string& addr, int port);
 	void UDP::set_timeout(int sec, int usec);
 };
 
@@ -105,7 +105,7 @@ private:
 
 class CmdReceiver {
 public:
-	CmdReceiver() {};
+	CmdReceiver();
 	bool init();
 	bool listen();
 
@@ -134,4 +134,19 @@ struct string_comparator {
 		}
 		return false;
 	}
+};
+
+class debug_msg {
+public:
+	debug_msg(const string& scope) : m_scope(scope){
+		cerr << "Entering " << m_scope << endl;
+	}
+
+	~debug_msg() {
+		cerr << "Exiting " << m_scope  << endl;
+	}
+
+private:
+	string m_scope;
+
 };

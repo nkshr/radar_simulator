@@ -10,9 +10,10 @@ bool binit_win_sock = false;
 bool bclose_win_sock = false;
 
 UDP::UDP() {
+	memset(&m_myself, 0, sizeof(sockaddr_in));
 	m_myself.sin_family = AF_INET;
 	m_myself.sin_addr.s_addr = INADDR_ANY;
-	m_myself.sin_port = htons(5000);
+	m_myself.sin_port = htons(8080);
 
 	m_to = m_myself;
 	m_to_len = sizeof(m_to);
@@ -52,13 +53,15 @@ bool UDP::init() {
 		return false;
 	}
 
-	FD_ZERO(&m_read_fds);
-	FD_SET(m_sock, &m_read_fds);
-
 	return true;
 }
 
 int UDP::receive(char * buf, int buf_size) {
+	debug_msg dmsg("receive");
+
+	FD_ZERO(&m_read_fds);
+	FD_SET(m_sock, &m_read_fds);
+
 	int num_fds = select(NULL, &m_read_fds, NULL, NULL, &m_timeout);
 
 	if (num_fds == 0) {
@@ -113,27 +116,27 @@ bool UDP::close() {
 	return true;
 }
 
-void UDP::set_myself(const char* addr, int port) {
-	if (addr == NULL)
+void UDP::set_myself(const string& addr, int port) {
+	if (addr.empty())
 		m_myself.sin_addr.s_addr = INADDR_ANY;
 	else
-		m_myself.sin_addr.s_addr = inet_addr(addr);
+		m_myself.sin_addr.s_addr = inet_addr(addr.c_str());
 	m_myself.sin_port = htons(port);
 }
 
-void UDP::set_sending_target(const char* addr, int port) {
-	if (addr == NULL)
-		m_to.sin_addr.s_addr = INADDR_ANY;
+void UDP::set_sending_target(const string& addr, int port) {
+	if (addr.empty())
+		m_to.sin_addr.s_addr = inet_addr("127.0.0.1");
 	else
-		m_to.sin_addr.s_addr = inet_addr(addr);
+		m_to.sin_addr.s_addr = inet_addr(addr.c_str());
 	m_to.sin_port = htons(port);
 }
 
-void UDP::set_recieving_target(const char* addr, int port) {
-	if (addr == NULL)
+void UDP::set_recieving_target(const string& addr, int port) {
+	if (addr.empty())
 		m_from.sin_addr.s_addr = INADDR_ANY;
 	else
-		m_from.sin_addr.s_addr = inet_addr(addr);
+		m_from.sin_addr.s_addr = inet_addr(addr.c_str());
 	m_from.sin_port = htons(port);
 }
 
@@ -234,12 +237,15 @@ void split(const string &buf, const string& delims, vector<string>& toks) {
 	}
 }
 
+CmdReceiver::CmdReceiver() {
+}
+
  bool CmdReceiver::init() {
 	return m_udp.init();
 }
 
 void CmdReceiver::set_connection(const string& addr, int port) {
-	m_udp.set_myself(addr.c_str(), port);
+	m_udp.set_myself(addr, port);
 }
 
 bool CmdReceiver::send_error(const string& msg) {

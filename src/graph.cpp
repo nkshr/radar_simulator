@@ -49,7 +49,7 @@ void Vertex::stop() {
 }
 
 Graph::Graph() {
-	m_cmd_receiver.set_connection("", 5000);
+	m_cmd_receiver.set_connection("", 8080);
 }
 
 bool Graph::init() {

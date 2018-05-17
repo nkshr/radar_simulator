@@ -119,6 +119,7 @@ int main()
 	//graph.add_vertex(simulator);
 
 	graph.init();
+	
 
 	//graph.create_vertex("cmd_receiver", "cmd_rcvr");
 	graph.create_vertex("simulator", "sim");
