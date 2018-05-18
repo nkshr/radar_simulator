@@ -91,7 +91,7 @@ private:
 		m_vcreators.insert(pair<const string, vcreator>(vtype, &Graph::create_vertex<T>));
 	}
 
-	CmdReceiver m_cmd_receiver;
+	CmdServer m_cmd_server;
 };
 
 class RadarSignal : protected Edge{

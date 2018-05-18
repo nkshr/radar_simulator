@@ -24,7 +24,7 @@ public:
 	UDP();
 
 	static bool init_win_sock();
-	static bool close_win_sock();
+	static bool finish_win_sock();
 
 	bool init();
 	bool close();
@@ -39,82 +39,80 @@ public:
 	void UDP::set_timeout(int sec, int usec);
 };
 
-enum Cmd {
-	VERTEX,
-	EDGE,
-	SET,
-	START,
-	STOP,
-	CLOSE,
-	LS,
-	END,
-	INVALID,
-};
+//enum Cmd {
+//	VERTEX,
+//	EDGE,
+//	SET,
+//	START,
+//	STOP,
+//	CLOSE,
+//	LS,
+//	END,
+//	INVALID,
+//};
 
 const static string cmd_error_str = "cmd_error";
 const static string cmd_success_str = "cmd_success";
 
-Cmd str_to_cmd(const string& str);
-string cmd_to_str(const Cmd& cmd);
+//Cmd str_to_cmd(const string& str);
+//string cmd_to_str(const Cmd& cmd);
 
 void split(const string& buf, const string& delimes, vector<string>& toks);
 
 const static vector<string> cmd_strs = {"vertex", "edge", "set",  "run", "stop", "close", "ls"};
 
 struct CmdParser {
-	Cmd cmd;
+	string cmd;
 	vector<string> args;
 	void parse(const string& buf);
 };
 
 const static string cmd_delims = " ";
 
-class CmdSender {
+class CmdClient {
 public:
-	CmdSender() {};
+	CmdClient() {};
 	bool init();
 
-	/*char* get_vertex_type() const;
-	char* get_vertex_id() const;*/
-	const vector<string>& get_vtypes() const;
-	const vector<string>& get_vnames() const;
-	const vector<string>& get_etypes() const;
-	const vector<string>& get_enames() const;
+	const string& get_get_result() const;
+	const vector<string>& get_ls_results() const;
 
+	bool request(const string& cmd, const vector<string>& args);
 
-	bool request(Cmd cmd, const vector<string>& args);
+	void set_server(const string& addr, int port);
+	void set_client(const string& addr, int port);
 
-	const string& get_error_msg() const;
+	bool is_cmd_success() const;
+
+	const char* get_error_msg() const;
 
 private:
-	string m_err_msg;
+	bool m_cmd_success;
+
+	string m_emsg;
+	string m_get_result;
+
 	string m_delims;
 
 	char m_rmsg[config::buf_size];
 
-	vector<string> m_vtypes;
-	vector<string> m_vnames;
-	
-	vector<string> m_etypes;
-	vector<string> m_enames;
-
-	vector<string> m_cmd_strs;
+	vector<string> m_ls_results;
 
 	UDP m_udp;
 };
 
-class CmdReceiver {
+class CmdServer {
 public:
-	CmdReceiver();
+	CmdServer();
 	bool init();
 	bool listen();
 
 	bool send_error(const string& msg);
 	bool send_success(const string& msg);
 
-	void set_connection(const string& addr, int port);
+	void set_server(const string& addr, int port);
 
-	Cmd get_cmd() const;
+	const string& get_cmd() const;
 	const vector<string>& get_args() const;
 
 private:
