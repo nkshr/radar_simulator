@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <iostream>
 
 #include <WinSock2.h>
 
@@ -12,13 +13,23 @@ class UDP {
 private:
 	SOCKET m_sock;
 	fd_set m_read_fds;
+
 	sockaddr_in m_myself, m_to, m_from;
 	int m_to_len, m_from_len;
+	
 	timeval m_timeout;
+	
+	int m_packet_size;
 
 	static WSADATA m_wsa;
+
+	char* m_buf;
+	int m_buf_size;
+
 	static bool binit_win_sock;
 	static bool bclose_win_sock;
+
+	void set_packet(const char* phase, long pos, const char* data);
 
 public:
 	UDP();
@@ -29,14 +40,18 @@ public:
 	bool init();
 	bool close();
 
-	int receive(char* buf, int buf_size);
-	int send(const char* buf, int buf_size);
-	int send_back(const char* buf, int buf_size);
+	int receive(char* packet, int packet_size);
+	int send(const char* packet, int packet_size);
+	int send_back(const char* packet, int packet_size);
+
+	bool _send(const char* data, int data_size);
 
 	void set_myself(const string& addr, int port);
 	void set_sending_target(const string& addr, int port);
 	void set_recieving_target(const string& addr, int port);
-	void UDP::set_timeout(int sec, int usec);
+	void set_timeout(int sec, int usec);
+	void set_packet_size(int sz);
+
 };
 
 //enum Cmd {

@@ -4,6 +4,7 @@ project(radar_simulator)
 
 set(SOURCE_FILES
 	src/clock.cpp
+	src/data_server.cpp
 	src/graph.cpp
 	src/miscel.cpp
 	src/modulator.cpp
@@ -14,6 +15,7 @@ set(SOURCE_FILES
 set(HEADER_FILES
 	src/clock.h
 	src/config.h
+	src/data_server.h
 	src/graph.h
 	src/math.h
 	src/miscel.h

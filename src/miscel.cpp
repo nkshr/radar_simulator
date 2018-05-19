@@ -56,8 +56,8 @@ bool UDP::init() {
 	return true;
 }
 
-int UDP::receive(char * buf, int buf_size) {
-	debug_msg dmsg("receive");
+int UDP::receive(char* packet, int packet_size) {
+	debug_msg dmsg("_receive");
 
 	FD_ZERO(&m_read_fds);
 	FD_SET(m_sock, &m_read_fds);
@@ -74,7 +74,7 @@ int UDP::receive(char * buf, int buf_size) {
 	}
 
 	int recv_len;
-	if((recv_len = recvfrom(m_sock, buf, buf_size, 0, (sockaddr*) &m_from, &m_from_len)) == SOCKET_ERROR)
+	if((recv_len = recvfrom(m_sock, packet, packet_size, 0, (sockaddr*) &m_from, &m_from_len)) == SOCKET_ERROR)
 	{
 		cerr << "Recieving error : " << WSAGetLastError() << endl;
 		return -1;
@@ -83,9 +83,9 @@ int UDP::receive(char * buf, int buf_size) {
 	return recv_len;
 }
 
-int UDP::send(const char * buf, int buf_size) {
+int UDP::send(const char* packet, int packet_size) {
 	int ssize;
-	ssize = sendto(m_sock, buf, buf_size, 0, (sockaddr*)&m_to, m_to_len);
+	ssize = sendto(m_sock, packet, packet_size, 0, (sockaddr*)&m_to, m_to_len);
 	if (ssize == SOCKET_ERROR)
 	{
 		cerr << "Sending error : " << WSAGetLastError() << endl;
@@ -95,18 +95,53 @@ int UDP::send(const char * buf, int buf_size) {
 	return ssize;
 }
 
-int UDP::send_back(const char * buf, int buf_size) {
+int UDP::send_back(const char* packet, int packet_size) {
 	int ssize;
-	ssize = sendto(m_sock, buf, buf_size, 0, (sockaddr*)&m_from, m_from_len);
+	ssize = sendto(m_sock, packet, packet_size, 0, (sockaddr*)&m_from, m_from_len);
 	if (ssize == SOCKET_ERROR)
 	{
 		cerr << "Sending error : " << WSAGetLastError() << endl;
 		return -1;
 	}
+	else if(ssize != packet_size){
+		cerr << "Sent packet size is not equal to size expected." << endl;
+	}
 
 	return ssize;
 }
 
+bool UDP::_send(const char* data, int data_size) {
+	int data_idx = 0;
+	bool success = false;
+	while (!success) {
+		while (1) {
+			if (data_idx == data_size)
+				break;
+
+			int res = data_size - data_idx;
+			int packet_size = m_packet_size < res ? packet_size : res;
+			set_buf("send", data_idx, &(data[data_idx]), packet_size);
+
+			int sent_size = send(m_sbuf, m_sbuf_size);
+			if (sent_size < 0) {
+				return false;
+			}
+
+			data_idx += sent_size;
+		}
+
+		int recv_size = receive(m_rbuf, m_rbuf_size);
+		if (recv_size < 0)
+			return false;
+
+		if (data_size != atoi(m_rbuf))
+			cerr << "Sending data was failed." << endl;
+		else
+			success = true;
+	}
+
+	return true;
+}
 
 bool UDP::close() {
 	if (closesocket(m_sock) != 0) {
