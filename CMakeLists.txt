@@ -10,6 +10,7 @@ set(SOURCE_FILES
 	src/modulator.cpp
 	src/object.cpp
 	src/simulator.cpp
+	src/udp.cpp
 )
 
 set(HEADER_FILES
@@ -21,6 +22,7 @@ set(HEADER_FILES
 	src/miscel.h
 	src/object.h
 	src/simulator.h
+	src/udp.h
 )
 
 add_executable(rsim_server src/server.cpp ${SOURCE_FILES} ${HEADER_FILES})
