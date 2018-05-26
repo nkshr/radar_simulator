@@ -10,6 +10,7 @@ set(SOURCE_FILES
 	src/modulator.cpp
 	src/object.cpp
 	src/simulator.cpp
+	src/tcp.cpp
 	src/udp.cpp
 )
 
@@ -22,6 +23,7 @@ set(HEADER_FILES
 	src/miscel.h
 	src/object.h
 	src/simulator.h
+	src/tcp.h
 	src/udp.h
 )
 
