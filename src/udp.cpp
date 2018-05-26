@@ -6,23 +6,53 @@ using namespace std;
 
 WSADATA UDP::m_wsa;
 
-void UDP::set_spack(int seq, const char* data, int  data_size) {
-	const int int_sz = sizeof(int);
-	m_spack_size = (int_sz << 1) + data_size;
-	if (m_spack_buf_size < m_spack_size) {
-		delete m_spack_buf;
-		m_spack_buf = new char[m_spack_size];
+bool UDP::_send(const Packet& pack) {
+	const int isize = sizeof(int);
+
+	if (m_sbuf_size < pack.pack_size) {
+		delete m_sbuf;
+		m_sbuf = new char[pack.pack_size];
 	}
 
-	char* packet = m_spack_buf;
+	char* tmp = m_sbuf;
+	memcpy((void*)tmp, (void*)(pack.data_size), isize);
+	tmp += isize;
 
-	memcpy((void*)packet, (void*)(&m_rpack_buf_size), int_sz);
-	packet += int_sz;
+	memcpy((void*)tmp, (void*)(&pack.seq), isize);
+	tmp += isize;
 
-	memcpy((void*)packet, (void*)(&seq), int_sz);
-	packet += int_sz;
+	memcpy((void*)tmp, (void*)pack.data, pack.data_size);
 
-	memcpy((void*)packet, (void*)data, data_size);
+	return _send(m_sbuf, pack.pack_size);
+}
+
+bool UDP::_receive(Packet& pack) {
+	int rsize = _receive(m_rbuf, m_rbuf_size);
+	if (rsize < 0)
+		return false;
+
+	pack.pack_size = *((int*)m_rbuf);
+	int isize = sizeof(int);
+
+	if (pack.pack_size != rsize) {
+		cerr << "Received packet size " << rsize
+			<< " is not equal to size expected " << pack.pack_size
+			<< "." << endl;
+		return false;
+	}
+
+	if (pack.pack_size > isize * 2) {
+		cerr << "Packet size " << pack.pack_size << " specified in packet is invalid." << endl;
+		return false;
+	}
+
+	char* tmp = isize + m_rbuf;
+	pack.seq = *((int*)m_rbuf);
+	tmp += isize;
+
+	pack.data = tmp;
+	pack.data_size = pack.pack_size - isize * 2;
+	return true;
 }
 
 UDP::UDP() {
@@ -41,8 +71,8 @@ UDP::UDP() {
 }
 
 UDP::~UDP() {
-	delete m_spack_buf;
-	delete m_rpack_buf;
+	delete m_sbuf;
+	delete m_rbuf;
 }
 
 bool UDP::init_win_sock() {
@@ -102,46 +132,61 @@ int UDP::_receive(char* buf, int buf_size) {
 	return recv_len;
 }
 
-int UDP::_send(const char* packet, int packet_size) {
+bool UDP::_send(const char* packet, int packet_size) {
 	int ssize;
 	ssize = sendto(m_sock, packet, packet_size, 0, (sockaddr*)&m_to, m_to_len);
 	if (ssize == SOCKET_ERROR)
 	{
 		cerr << "Sending error : " << WSAGetLastError() << endl;
+		return false;
 	}
 	else if (ssize != packet_size) {
 		cerr << "Sent packet size is not equal to size expected." << endl;
+		return false;
 	}
 
 
-	return ssize;
+	return true;
 }
 
-int UDP::_send_back(const char* packet, int packet_size) {
+bool UDP::_send_back(const char* packet, int packet_size) {
 	int ssize;
 	ssize = sendto(m_sock, packet, packet_size, 0, (sockaddr*)&m_from, m_from_len);
 	if (ssize == SOCKET_ERROR)
 	{
 		cerr << "Sending error : " << WSAGetLastError() << endl;
+		return false;
 	}
 	else if (ssize != packet_size) {
 		cerr << "Sent packet size is not equal to size expected." << endl;
+		return false;
 	}
 
-	return ssize;
+	return true;
 }
 
 
 bool UDP::send(const char* data, int data_size) {
-	int num_packs = data_size / m_max_dseg_size;
+	int num_packs = 1+(data_size / m_max_dseg_size);
 	if ((data_size % m_max_dseg_size) != 0) {
 		num_packs++;
 	}
 
-	const char* dfrag = data;
-	for (int s = 0; s < num_packs; ++s) {
+	Packet pack;
+	pack.pack_size = (sizeof(int) << 1) + pack.pack_size;
+	pack.seq = 0;
+	pack.data = (char*)(&num_packs);
+	pack.data_size = sizeof(int);
+
+	if(!_send(pack))
+		return false;
+
+	pack.data = const_cast<char*>(data);
+
+	for (int s = 1; s < num_packs; ++s) {
 		int dseg_size;
-		int res = data - dfrag;
+		int res = data - pack.data;
+
 		if (res < m_max_dseg_size) {
 			dseg_size = res;
 		}
@@ -149,67 +194,52 @@ bool UDP::send(const char* data, int data_size) {
 			dseg_size = m_max_dseg_size;
 		}
 
-		if ((s + 1) == num_packs)
-			set_spack(-s, dfrag, dseg_size);
-		else
-			set_spack(s, dfrag, dseg_size);
+		pack.seq = s;
+		pack.data_size = dseg_size;
 
-		int sent_size = _send(m_spack_buf, m_spack_buf_size);
-		if (sent_size != m_spack_buf_size) {
+		if (!_send(pack))
 			return false;
-		}
 
-		dfrag += sent_size;
+		pack.data += pack.data_size;		
 	}
 
 	return true;
 }
 
 bool UDP::receive(char* buf, int buf_size, int& data_size, int& seq) {
-	const int isize = sizeof(int);
-	int prev_seq = -1;
-	char* prpack = m_rpack_buf;
-	char* pbuf = buf;
-	int num_packs;
-	data_size = 0;
-	for (;;) {
-		int rsize = _receive(prpack, m_rpack_buf_size);
-		if (rsize < 0)
-			return false;
+	Packet pack;
+	if (!_receive(pack)) {
+		return false;
+	}
 
-		int pack_size = (*(int*)prpack);
-		prpack += isize;
-		if (pack_size != rsize) {
-			cerr << "Received packet size " << rsize 
-				<< " is not equal to size expected " << pack_size 
-				<< "."<< endl;
+	int num_packs = (*(int*)pack.data);
+	if (!(num_packs > 0)) {
+		cerr << "Specified number of packets is invalid." << endl;
+		return false;
+	}
+
+	int prev_seq = 1;
+	int rdata_size = 0;
+	char* tmp = buf;
+	for (;;) {
+		if (!_receive(pack)) {
 			return false;
 		}
 
-		int seq = (*(int*)prpack);
-		prpack += isize;
 
-		if (seq == ++prev_seq) {
+		if (pack.seq == ++prev_seq) {
 			cerr << "Packets is not sequential." << endl;
 			return false;
 		}
 
-		int dseg_size = pack_size - isize * 2;
-
-		if (dseg_size + data_size > buf_size) {
-			cerr << "Received data it too big." << endl;
+		rdata_size += pack.data_size;
+		if (rdata_size > buf_size) {
+			cerr << "Received data it too big for buffer." << endl;
 			return false;
 		}
 
-		if (seq == 0) {
-			num_packs = (*(int*)prpack);
-		}
-		else {
-			memcpy(pbuf, prpack, dseg_size);
-		}
-
-		pbuf += dseg_size;
-		data_size += dseg_size;
+		memcpy(tmp, pack.data, pack.data_size);
+		tmp += pack.data_size;
 
 		if (seq == num_packs - 1)
 			return true;
@@ -252,4 +282,8 @@ void UDP::set_recieving_target(const string& addr, int port) {
 void UDP::set_timeout(int sec, int usec) {
 	m_timeout.tv_sec = sec;
 	m_timeout.tv_usec = usec;
+}
+
+void UDP::set_dseg_size(int sz) {
+	m_max_dseg_size = sz;
 }
