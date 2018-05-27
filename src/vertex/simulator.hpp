@@ -2,10 +2,10 @@
 
 #include <vector>
 
-#include "config.h"
-#include "math.h"
-#include "object.h"
-#include "graph.h"
+#include "common/config.hpp"
+#include "common/math.hpp"
+#include "common/object.hpp"
+#include "../graph.h"
 
 using namespace std;
 

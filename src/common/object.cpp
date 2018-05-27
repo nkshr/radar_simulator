@@ -1,4 +1,5 @@
-#include "object.h"
+#include "math.hpp"
+#include "object.hpp"
 
 Sphere::Sphere(const Vec3d &_pos, double _reflectance, double  _radius) :
 	Object(_pos, _reflectance), radius(_radius)

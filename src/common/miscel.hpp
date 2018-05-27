@@ -3,8 +3,8 @@
 #include <string>
 #include <iostream>
 
-#include "config.h"
-#include "udp.h"
+#include "config.hpp"
+#include "udp.hpp"
 
 using namespace std;
 

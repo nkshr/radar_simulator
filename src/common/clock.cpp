@@ -1,4 +1,4 @@
-#include "clock.h"
+#include "clock.hpp"
 
 steady_clock::time_point Clock::m_start_time;
 

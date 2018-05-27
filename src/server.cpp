@@ -1,8 +1,8 @@
 #include <iostream>
 #include <fstream>
 
-#include "simulator.h"
-#include  "math.h"
+#include  "common/math.hpp"
+#include "vertex/simulator.hpp"
 
 #define REAL 0
 #define IMAG 1

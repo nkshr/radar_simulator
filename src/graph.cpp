@@ -10,9 +10,10 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
+#include "vertex/simulator.hpp"
+#include "common/miscel.hpp"
+
 #include "graph.h"
-#include "simulator.h"
-#include "miscel.h"
 
 using namespace std;
 

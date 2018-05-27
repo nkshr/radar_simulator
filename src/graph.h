@@ -3,8 +3,8 @@
 #include <set>
 #include <string>
 
-#include "clock.h"
-#include "miscel.h"
+#include "common/clock.hpp"
+#include "common/miscel.hpp"
 
 using namespace std;
 

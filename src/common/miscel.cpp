@@ -1,7 +1,8 @@
 #include <iostream>
 #include <sstream>
 
-#include "miscel.h"
+#include "config.hpp"
+#include "miscel.hpp"
 
 using namespace std;
 
