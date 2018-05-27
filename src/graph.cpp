@@ -13,41 +13,9 @@
 #include "vertex/simulator.hpp"
 #include "common/miscel.hpp"
 
-#include "graph.h"
+#include "graph.hpp"
 
 using namespace std;
-
-mutex mtx;
-
-Vertex::Vertex() : m_brun(false){
-}
-
-void Vertex::start() {
-	m_th = thread(&Vertex::processing_loop, this);
-}
-
-void Vertex::join() {
-	m_th.join();
-}
-
-void Vertex::processing_loop() {
-	m_clock.start();
-	
-	while (true) {
-		if (!m_brun)
-			break;
-
-		if (!process())
-			break;
-		
-
-		m_clock.adjust();
-	}
-}
-
-void Vertex::stop() {
-	m_brun = false;
-}
 
 Graph::Graph() {
 	m_cmd_server.set_server("", 8080);
@@ -65,7 +33,7 @@ bool Graph::init() {
 void Graph::run() {
 	start_all();
 	listen();
-
+	
 	for (vmap::iterator it = m_vertexes.begin(); it != m_vertexes.end(); ++it) {
 		it->second->join();
 	}
@@ -101,6 +69,14 @@ bool Graph::stop(const string& vname) {
 		}
 	}
 	return false;
+}
+
+void Graph::lock() {
+	m_lock.lock();
+}
+
+void Graph::unlock() {
+	m_lock.unlock();
 }
 
 void Graph::listen() {
@@ -271,26 +247,4 @@ void foo(const char* s) {}
 //		m_vertexes[i]->stop();
 //	}
 //}
-
-
-RadarSignal::RadarSignal(int buf_size) : m_idx(0), m_buf_size(buf_size){
-	m_buf = new double[m_buf_size];
-	m_times = new long long[m_buf_size];
-}
-
-RadarSignal::~RadarSignal() {
-	delete[] m_buf;
-	delete[] m_times;
-}
-
-void RadarSignal::set_signal(double d, long long t) {
-	mtx.lock();
-	m_buf[m_idx] = d;
-	m_times[m_idx] = t;
-
-	if (++m_idx == m_buf_size) {
-		m_idx = 0;
-	}
-	mtx.unlock();
-}
 

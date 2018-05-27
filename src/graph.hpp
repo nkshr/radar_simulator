@@ -2,6 +2,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <mutex>
 
 #include "common/clock.hpp"
 #include "common/miscel.hpp"
@@ -12,33 +13,8 @@ class Graph;
 class Vertex;
 class Edge;
 
-class Vertex {
-public:
-	Vertex();
-	void start();
-	void join();
-	void processing_loop();
-	void stop();
-
-	virtual bool process() = 0;
-
-protected:
-	bool m_brun;
-
-	thread m_th;
-
-	Clock m_clock;
-	Graph *m_graph;
-};
 
 void foo(const char*s);
-
-class Edge {
-public:
-protected:
-	Vertex* m_to;
-	Vertex* m_from;
-};
 
 typedef void(Graph::*vcreator)(const string&);
 typedef void(*ecreator)(const string&);
@@ -72,7 +48,12 @@ public:
 	void stop_all();
 	bool stop(const string& vname);
 
+	void lock();
+	void unlock();
+
 private:
+	mutex m_lock;
+
 	char m_cmd_buf[config::buf_size];
 
 	vmap m_vertexes;
@@ -92,18 +73,4 @@ private:
 	}
 
 	CmdServer m_cmd_server;
-};
-
-class RadarSignal : protected Edge{
-public:
-	RadarSignal(int buf_size);
-	~RadarSignal();
-
-	void set_signal(double d, long long t);
-
-private:
-	int m_idx;
-	int m_buf_size;
-	double* m_buf;
-	long long* m_times;
 };

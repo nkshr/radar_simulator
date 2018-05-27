@@ -1,4 +1,7 @@
-#include "data_server.h"
+#include "data_server.hpp"
+
+DataServer::DataServer() {
+}
 
 bool DataServer::process() {
 

@@ -2,7 +2,7 @@
 #include <fstream>
 
 #include  "common/math.hpp"
-#include "vertex/simulator.hpp"
+#include "graph.hpp"
 
 #define REAL 0
 #define IMAG 1
@@ -103,12 +103,12 @@ int main()
 	//{
 	//	std::cout << data[i] << std::endl;
 	//}
-	SConfig sconfig;
+	//SConfig sconfig;
 
-	sconfig.radar.bandwidth = 10e6;
-	sconfig.radar.pulse_width = 10e-6;
-	sconfig.radar.gain = 1;
-	sconfig.radar.sampling_rate = 1;
+	//sconfig.radar.bandwidth = 10e6;
+	//sconfig.radar.pulse_width = 10e-6;
+	//sconfig.radar.gain = 1;
+	//sconfig.radar.sampling_rate = 1;
 
 	//std::vector<Object> objects;
 

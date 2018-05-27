@@ -1,7 +1,7 @@
 #pragma once
 
-#include "miscel.h"
-#include "graph.h"
+#include "../common/miscel.hpp"
+#include "vertex.hpp"
 
 using namespace std;
 

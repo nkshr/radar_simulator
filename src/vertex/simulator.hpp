@@ -5,7 +5,7 @@
 #include "common/config.hpp"
 #include "common/math.hpp"
 #include "common/object.hpp"
-#include "../graph.h"
+#include "vertex.hpp"
 
 using namespace std;
 
@@ -39,7 +39,7 @@ private:
 
 	SConfig m_sconfig;
 
-	RadarSignal *m_rs;
+	//RadarSignal *m_rs;
 
 public:
 	Simulator();
