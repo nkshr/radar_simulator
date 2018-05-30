@@ -2,9 +2,9 @@
 
 #include <vector>
 
-#include "common/config.hpp"
-#include "common/math.hpp"
-#include "common/object.hpp"
+#include "../common/config.hpp"
+#include "../common/math.hpp"
+#include "../common/object.hpp"
 #include "vertex.hpp"
 
 using namespace std;

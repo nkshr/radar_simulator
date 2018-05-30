@@ -16,11 +16,12 @@ class Edge;
 
 void foo(const char*s);
 
-typedef void(Graph::*vcreator)(const string&);
-typedef void(*ecreator)(const string&);
+typedef Vertex* (Graph::*vcreator)();
+typedef Edge* (Graph::*ecreator)();
 
 typedef map<const string, Vertex*> vmap;
 typedef map<const string, Edge*> emap;
+
 
 typedef map<const string, vcreator> vcmap;
 typedef map<const string, ecreator> ecmap;
@@ -36,7 +37,9 @@ public:
 	void listen();
 	
 	void set_port(int port);
-	
+
+	bool set_variable(const string& vname, const string& var, void* value);
+
 	bool create_vertex(const string& vtype, const string& vname);
 	bool create_edge(const string& etype, const string& ename);
 
@@ -51,6 +54,8 @@ public:
 	void lock();
 	void unlock();
 
+	const Edge* get_edge(const string& ename);
+
 private:
 	mutex m_lock;
 
@@ -62,15 +67,15 @@ private:
 	vcmap m_vcreators;
 	ecmap m_ecreators;
 
-	template <typename T>
-	void create_vertex(const string& vname);
-	template <typename T>
-	void create_edge(const string& ename);
+	template<typename T>
+	Vertex* create_vertex();
+	template<typename T>
+	Edge* create_edge();
 
-	template <typename T>
-	void register_vertex(const string& vtype) {
-		m_vcreators.insert(pair<const string, vcreator>(vtype, &Graph::create_vertex<T>));
-	}
+	template<typename T>
+	void register_vertex(const string& vtype);
+	template<typename T>
+	void register_edge(const string& etype);
 
 	CmdServer m_cmd_server;
 };

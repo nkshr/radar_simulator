@@ -1,4 +1,8 @@
+#include <vector>
+
 #include "../graph.hpp"
+
+using namespace std;
 
 class Edge {
 public:

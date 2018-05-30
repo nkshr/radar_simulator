@@ -4,16 +4,16 @@
 #include <thread>
 #include <ctime>
 
-#include "simulator.h"
-#include "clock.h"
+#include "simulator.hpp"
+#include "../common/clock.hpp"
 
 using namespace std;
 using namespace std::chrono;
 
 using namespace std::this_thread;
 
-Simulator::Simulator() : Vertex() {
-
+Simulator::Simulator() :  Vertex() {
+	DoubleVar m_pulse_interval("pulse_interval", (void*)10, dynamic_cast<Vertex*>(this));
 }
 
 void Simulator::init(){
@@ -84,7 +84,7 @@ bool Simulator::process() {
 	}
 
 	r = simulate(m_sconfig.radar.pos, m_sconfig.radar.dir, m_last_pulse_time, cur_time, cur_time + m_clock.get_time_per_clock());
-	m_rs->set_signal(r, cur_time);
+	//m_rs->set_signal(r, cur_time);
 
 	return true;
 }

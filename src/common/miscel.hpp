@@ -117,3 +117,6 @@ private:
 	string m_scope;
 
 };
+
+template <typename T>
+T* create_instancec();

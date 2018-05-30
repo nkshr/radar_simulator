@@ -194,14 +194,31 @@ void Graph::listen() {
 
 }
 
+
 void Graph::set_port(int port) {
-	//m_udp.set_port(port);
+	m_cmd_server.set_server("128.0.0.1", 8080);
+}
+
+bool Graph::set_variable(const string& vertex_name, const string& variable_name, void* value) {
+	return true;
 }
 
 bool Graph::create_vertex(const string& vtype, const string& vname) {
 	for (vcmap::iterator it = m_vcreators.begin(); it != m_vcreators.end(); ++it) {
 		if (it->first == vtype) {
-			//it->second(vname);
+			Vertex* v = (this->*(it->second))();
+			m_vertexes.insert(pair<const string, Vertex*>(vname, v));
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Graph::create_edge(const string& etype, const string& ename) {
+	for (ecmap::iterator it = m_ecreators.begin(); it != m_ecreators.end(); ++it) {
+		if (it->first == etype) {
+			Edge* e = (this->*(it->second))();
+			m_edges.insert(pair<const string, Edge*>(ename, e));
 			return true;
 		}
 	}
@@ -209,42 +226,24 @@ bool Graph::create_vertex(const string& vtype, const string& vname) {
 }
 
 template <typename T>
-void Graph::create_vertex(const string& vname) {
-	m_vertexes.insert(pair<const string, Vertex*>(vname, dynamic_cast<Vertex*>(new T())));
-}
-
-bool Graph::create_edge(const string& etype, const string& ename) {
-	//for (int i = 0; i < m_edge_types.size(); ++i) {
-	//	if (strcmp(m_edge_types[i], etype) == 0) {
-	//		m_ecreators[i](ename);
-	//		return true;
-	//	}
-	//}
-	return false;
+Vertex* Graph::create_vertex() {
+	return dynamic_cast<Vertex*>(new T);
 }
 
 template <typename T>
-void Graph::create_edge(const string& ename) {
-	//m_edges.push_back(dynamic_cast<T>(new T(name)));
+Edge* Graph::create_edge() {
+	return dynamice_cast<Edge*>(new T);
+}
+
+template <typename T>
+void Graph::register_vertex(const string& vtype) {
+	m_vcreators.insert(pair<const string, vcreator>(vtype, &Graph::create_vertex<T>));
+}
+
+template <typename T>
+void Graph::register_edge(const string& etype) {
+	m_ecreators.insert(pair<const string, ecreator>(etype, &create_edge<T>));
 }
 void foo(const char* s) {}
 
-//template <typename T>
-//void Graph::register_vertex(const char* vtype) {
-//	m_vcreators.insert(vtype, foo);
-//}
-
-
-
-//void Graph::run(const vector<char*>& vertexes) {
-//	for (int i = 0; i < m_vertexes.size(); ++i) {
-//		
-//	}
-//}
-//
-//void Graph::stop_all() {
-//	for (int i = 0; i < m_vertexes.size(); ++i){
-//		m_vertexes[i]->stop();
-//	}
-//}
 

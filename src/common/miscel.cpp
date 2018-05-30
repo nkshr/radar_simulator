@@ -179,3 +179,8 @@ const string& CmdServer::get_cmd() const {
 const vector<string>& CmdServer::get_args() const {
 	return m_cp.args;
 }
+
+template <typename T>
+T* create_instance() {
+	return new T;
+}
