@@ -1,18 +1,16 @@
 #include <vector>
 
-#include "../graph.hpp"
+#include "../board.hpp"
 
 using namespace std;
 
-class Edge {
+class Signal {
 public:
 protected:
-	Vertex* m_vertex0;
-	Vertex* m_vertex1;
-	Graph* m_graph;
+	Board* m_board;
 };
 
-class RadarSignal : protected Edge {
+class RadarSignal : protected Signal {
 public:
 	RadarSignal(int buf_size);
 	~RadarSignal();

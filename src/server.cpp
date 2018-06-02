@@ -2,7 +2,7 @@
 #include <fstream>
 
 #include  "common/math.hpp"
-#include "graph.hpp"
+#include "board.hpp"
 
 #define REAL 0
 #define IMAG 1
@@ -118,16 +118,16 @@ int main()
 	if (!UDP::init_win_sock())
 		return -1;
 
-	Graph graph;
-	//graph.add_vertex(simulator);
+	Board board;
+	//graph.add_module(simulator);
 
-	graph.init();
+	board.init();
 	
 
-	//graph.create_vertex("cmd_receiver", "cmd_rcvr");
-	graph.create_vertex("simulator", "sim");
+	//graph.create_module("cmd_receiver", "cmd_rcvr");
+	board.create_module("simulator", "sim");
 
-	graph.run();
+	board.run();
 
 	UDP::finish_win_sock();
 	//simulator.simulate( radar, objects);

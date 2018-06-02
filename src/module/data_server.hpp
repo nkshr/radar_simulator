@@ -1,11 +1,11 @@
 #pragma once
 
 #include "../common/miscel.hpp"
-#include "vertex.hpp"
+#include "module.hpp"
 
 using namespace std;
 
-class DataServer : public Vertex {
+class DataServer : public Module {
 private:
 	UDP m_udp;
 

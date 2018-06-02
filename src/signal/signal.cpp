@@ -1,4 +1,4 @@
-#include "edge.hpp"
+#include "signal.hpp"
 
 RadarSignal::RadarSignal(int buf_size) : m_idx(0), m_buf_size(buf_size) {
 	m_buf = new double[m_buf_size];
@@ -11,7 +11,7 @@ RadarSignal::~RadarSignal() {
 }
 
 void RadarSignal::set_signal(double d, long long t) {
-	m_graph->lock();
+	m_board->lock();
 
 	m_buf[m_idx] = d;
 	m_times[m_idx] = t;
@@ -20,6 +20,6 @@ void RadarSignal::set_signal(double d, long long t) {
 		m_idx = 0;
 	}
 
-	m_graph->unlock();
+	m_board->unlock();
 }
 

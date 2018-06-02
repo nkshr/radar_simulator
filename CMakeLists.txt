@@ -19,39 +19,39 @@ set(COMMON_HPP_FILES
 	src/common/udp.hpp
 )
 
-set(VERTEX_CPP_FILES
-	src/vertex/vertex.cpp
-	src/vertex/data_server.cpp
-	src/vertex/modulator.cpp
-	src/vertex/simulator.cpp
+set(MODULE_CPP_FILES
+	src/module/module.cpp
+	src/module/data_server.cpp
+	src/module/modulator.cpp
+	src/module/simulator.cpp
 )
 
-set(VERTEX_HPP_FILES
-	src/vertex/vertex.hpp
-	src/vertex/data_server.hpp
-	src/vertex/simulator.hpp
+set(MODULE_HPP_FILES
+	src/module/module.hpp
+	src/module/data_server.hpp
+	src/module/simulator.hpp
 )
 
-set(EDGE_CPP_FILES
-	src/edge/edge.cpp
+set(SIGNAL_CPP_FILES
+	src/signal/signal.cpp
 )
 
-set(EDGE_HPP_FILES
-	src/edge/edge.hpp
+set(SIGNAL_HPP_FILES
+	src/signal/signal.hpp
 )
 
 set(CPP_FILES
 	${COMMON_CPP_FILES}
-	${VERTEX_CPP_FILES}
-	${EDGE_CPP_FILES}
-	src/graph.cpp
+	${MODULE_CPP_FILES}
+	${SIGNAL_CPP_FILES}
+	src/board.cpp
 )
 
 set(HPP_FILES
 	${COMMON_HPP_FILES}
-	${VERTEX_HPP_FILES}
-	${EDGE_HPP_FILES}
-	src/graph.hpp
+	${MODULE_HPP_FILES}
+	${SIGNAL_HPP_FILES}
+	src/board.hpp
 )
 
 add_executable(rsim_server src/server.cpp ${CPP_FILES} ${HPP_FILES})

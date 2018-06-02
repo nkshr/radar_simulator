@@ -12,8 +12,7 @@ using namespace std::chrono;
 
 using namespace std::this_thread;
 
-Simulator::Simulator() :  Vertex() {
-	DoubleVar m_pulse_interval("pulse_interval", (void*)10, dynamic_cast<Vertex*>(this));
+Simulator::Simulator() :  Module() {
 }
 
 void Simulator::init(){

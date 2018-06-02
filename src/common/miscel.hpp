@@ -28,7 +28,7 @@ const static string cmd_success_str = "cmd_success";
 
 void split(const string& buf, const string& delimes, vector<string>& toks);
 
-const static vector<string> cmd_strs = {"vertex", "edge", "set",  "run", "stop", "close", "ls"};
+const static vector<string> cmd_strs = {"module", "signal", "set",  "run", "stop", "close", "ls"};
 
 struct CmdParser {
 	string cmd;

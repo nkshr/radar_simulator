@@ -5,18 +5,13 @@
 #include "../common/config.hpp"
 #include "../common/math.hpp"
 #include "../common/object.hpp"
-#include "vertex.hpp"
+#include "module.hpp"
 
 using namespace std;
 
 struct datum {
 	double x, t;
 	double delay;
-};
-
-struct Signal {
-	long long t;
-	double *data;
 };
 
 struct SConfig {
@@ -26,14 +21,14 @@ struct SConfig {
 	vector<Object*> objects;
 };
 
-class Simulator : public Vertex{
+class Simulator : public Module{
 private:
 	long long m_last_pulse_time;
 
 	double m_pulse_interval;
 	
 	bool m_stop;
-
+	
 	CArray m_rx;
 	CArray m_tx;
 
