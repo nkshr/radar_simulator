@@ -13,6 +13,7 @@ using namespace std::chrono;
 using namespace std::this_thread;
 
 Simulator::Simulator() :  Module() {
+	register_port("max_depth", "", MemType::MT_INT, (Memory**)&m_max_depth);
 }
 
 void Simulator::init(){

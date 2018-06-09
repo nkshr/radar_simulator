@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <mutex>
 
 #include "config.hpp"
 #include "udp.hpp"
@@ -119,4 +120,12 @@ private:
 };
 
 template <typename T>
-T* create_instancec();
+T* create_instance();
+
+class Mutex {
+public:
+	Mutex(mutex* lock);
+	~Mutex();
+private:
+	mutex* m_lock;
+};

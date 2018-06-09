@@ -1,5 +1,5 @@
 #pragma once
-#include <map>
+//#include <map>
 #include <set>
 #include <string>
 #include <typeinfo>
@@ -11,29 +11,91 @@
 #include "../board.hpp"
 #include "../signal/signal.hpp"
 
+enum MemType {
+	MT_INT,
+	MT_FLOAT,
+	MT_DOUBLE,
+	MT_STRING,
+};
 
+class Memory {
+public:
+	virtual bool set_value(const string& value) = 0;
+	bool is_rom() const;
+	MemType get_type() const;
+	void enable_rom(bool rom);
 
-//class DoublePort : public Port {
+protected:
+	mutex m_lock;
+
+private:
+	string m_name;
+	bool m_brom;
+	MemType m_mem_type;
+	
+};
+
+class MemInt : public Memory{
+public:
+	virtual bool set_value(const string& value);
+	void set_value(int value);
+	int get_value();
+private:
+	int m_value;
+};
+
+union MemPtr {
+	MemInt* mem_int;
+};
+
+//class Port {
 //public:
+//	string& get_name();
+//	virtual bool set_value(const string& value) = 0;
+//	virtual void update();
 //
-//	double m_var;
-//	virtual bool set_value(const string& value) {
-//		m_var = atof(value.c_str());
-//		return true;
-//	}
+//	void add_connection(Port* port);
+//
+//protected:
+//	void lock();
+//	void unlock();
+//	string m_name;
+//	vector<Port*> m_dests;
+//
+//private:
+//	mutex* m_lock;
 //};
 
-//class SignalPort : public Port {
+//class PortInt : public Port {
+//private:
+//	int m_value;
+//	MemInt m_mem;
+//
 //public:
-//	virtual bool set_value(const string& value);
+//	int get_value();
+//	//virtual void set_value(int value);
+//	virtual void update();
+//
+//	void set_value(int value);
 //};
 
-class InPort;
-class OutPort;
+struct Port {
+	string name;
+	string disc;
+	//MemPtr mem;
+	MemType mem_type;
+	Memory** mem;
+};
+
+struct SignalPort : public Port {
+
+};
+
+typedef map<const string, Port*> PortMap;
+typedef map<const string, Memory*> MemMap;
 
 class Module {
 public:
-	class Port;
 
 	Module();
 	void start();
@@ -43,9 +105,9 @@ public:
 
 	virtual bool process() = 0;
 
-	Port* get_port();
-	InPort* get_in_port(const string& name);
-	OutPort* get_out_port(const string &name);
+	//Port* get_port(const string& name);
+
+	bool connect_port(const string& port_name, const string& mem_name);
 
 protected:
 	bool m_brun;
@@ -56,69 +118,19 @@ protected:
 
 	Board *m_board;
 
-	map<const string, InPort*> m_in_ports;
-	map<const string, OutPort*> m_out_ports;
+	PortMap m_ports;
+	MemMap m_mems;
+	void register_port(const string& name, const string& disc,
+		MemType mem_type, Memory** mem);
 
-	void register_port(const string& name, Port* p);
-
+	Port* get_port(const string& name);
 	bool set_port(const string& name, const string& value);
 
-	//void lock();
-	//void unlock();
-
-private:
-	mutex m_lock;
-	map<const string, Port*> m_vars;
-};
-
-class Module::Port{
-public:
-	Port();
-	Port(const string& disc, void* value);
-
-	const string& get_discription() const;
-
-private:
-	mutex m_lock;
-
-	string m_disc;
-
-protected:
 	void lock();
 	void unlock();
-};
-
-class InPort : public Module::Port {
-public:
-	InPort();
-	InPort(const string& disc, void* value);
-	virtual bool set_value(const string& value) = 0;
-};
-
-class OutPort : public Module::Port {
-public:
-	OutPort();
-	virtual bool connect(InPort* port);
-};
-
-class InInt : public InPort {
-public:
-	InInt(const string& disc, void* value);
-	virtual bool set_value(const string& value);
-	void set_value(const int value);
-
-	int get_value();
 
 private:
-	int m_value;
-};
-
-class OutInt : public OutPort {
-public:
-	virtual bool connect(InPort* port);
-	void set_value(const int value);
-private:
-	InInt* m_to;
+	mutex m_lock;
 };
 
 

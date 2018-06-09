@@ -33,6 +33,7 @@ private:
 	CArray m_tx;
 
 	SConfig m_sconfig;
+	MemInt* m_max_depth;
 
 	//RadarSignal *m_rs;
 

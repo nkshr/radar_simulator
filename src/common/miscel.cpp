@@ -180,7 +180,16 @@ const vector<string>& CmdServer::get_args() const {
 	return m_cp.args;
 }
 
+
 template <typename T>
 T* create_instance() {
 	return new T;
+}
+
+Mutex::Mutex(mutex* lock) : m_lock(lock) {
+	m_lock->lock();
+}
+
+Mutex::~Mutex() {
+	m_lock->unlock();
 }
