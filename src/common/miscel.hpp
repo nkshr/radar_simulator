@@ -68,7 +68,7 @@ private:
 
 	vector<string> m_ls_results;
 
-	UDP m_udp;
+	UDPSock m_udp;
 };
 
 class CmdServer {
@@ -91,7 +91,7 @@ private:
 
 
 
-	UDP m_udp;
+	UDPSock m_udp;
 	CmdParser m_cp;
 };
 

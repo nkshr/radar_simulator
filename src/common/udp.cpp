@@ -4,9 +4,93 @@
 
 using namespace std;
 
-WSADATA UDP::m_wsa;
+WSADATA UDPSock::m_wsa;
 
-bool UDP::_send(const Packet& pack) {
+bool Sock::init_win_sock() {
+	if (WSAStartup(WINSOCK_VERSION, &m_wsa) != 0) {
+		cerr << " Windows Socket initialization error : " << WSAGetLastError() << endl;
+		return false;
+	}
+
+	return true;
+}
+
+bool Sock::finish_win_sock() {
+	if (WSACleanup() != 0) {
+		cerr << "Windows Socket termination error : " << WSAGetLastError() << endl;
+		return false;
+	}
+	return true;
+}
+
+Sock::Sock() {
+	memset(&m_myself, 0, sizeof(sockaddr_in));
+	//m_myself.sin_family = AF_INET;
+	m_myself.sin_addr.s_addr = INADDR_ANY;
+	m_myself.sin_port = htons(8080);
+
+	m_to = m_myself;
+	m_to_len = sizeof(m_to);
+
+	m_from = m_myself;
+	m_from_len = sizeof(m_from);
+
+	set_timeout(10, 0);
+}
+
+bool Sock::init() {
+	if ((m_sock = socket(m_myself.sin_family, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
+		cerr << "Socket creationn error : " << WSAGetLastError() << endl;
+		return false;
+	}
+
+	if (bind(m_sock, (sockaddr*)&m_myself, sizeof(m_myself)) == SOCKET_ERROR) {
+		cerr << "Binding error : " << WSAGetLastError() << endl;
+		return false;
+	}
+
+	return true;
+}
+
+bool Sock::close() {
+	if (closesocket(m_sock) != 0) {
+		cerr << "Socket closing error : " << WSAGetLastError() << endl;
+		return false;
+	}
+	return true;
+}
+
+void Sock::set_myself(const string& addr, int port) {
+	if (addr.empty())
+		m_myself.sin_addr.s_addr = INADDR_ANY;
+	else
+		m_myself.sin_addr.s_addr = inet_addr(addr.c_str());
+	m_myself.sin_port = htons(port);
+}
+
+void Sock::set_sending_target(const string& addr, int port) {
+	if (addr.empty())
+		m_to.sin_addr.s_addr = inet_addr("127.0.0.1");
+	else
+		m_to.sin_addr.s_addr = inet_addr(addr.c_str());
+	m_to.sin_port = htons(port);
+}
+
+void Sock::set_recieving_target(const string& addr, int port) {
+	if (addr.empty())
+		m_from.sin_addr.s_addr = INADDR_ANY;
+	else
+		m_from.sin_addr.s_addr = inet_addr(addr.c_str());
+	m_from.sin_port = htons(port);
+}
+
+
+void Sock::set_timeout(int sec, int usec) {
+	m_timeout.tv_sec = sec;
+	m_timeout.tv_usec = usec;
+}
+
+bool UDPSock::_send(const Packet& pack) {
 	const int isize = sizeof(int);
 
 	if (m_sbuf_size < pack.pack_size) {
@@ -26,7 +110,7 @@ bool UDP::_send(const Packet& pack) {
 	return _send(m_sbuf, pack.pack_size);
 }
 
-bool UDP::_receive(Packet& pack) {
+bool UDPSock::_receive(Packet& pack) {
 	int rsize = _receive(m_rbuf, m_rbuf_size);
 	if (rsize < 0)
 		return false;
@@ -55,59 +139,15 @@ bool UDP::_receive(Packet& pack) {
 	return true;
 }
 
-UDP::UDP() {
-	memset(&m_myself, 0, sizeof(sockaddr_in));
-	m_myself.sin_family = AF_INET;
-	m_myself.sin_addr.s_addr = INADDR_ANY;
-	m_myself.sin_port = htons(8080);
-
-	m_to = m_myself;
-	m_to_len = sizeof(m_to);
-
-	m_from = m_myself;
-	m_from_len = sizeof(m_from);
-
-	set_timeout(10, 0);
+UDPSock::UDPSock() {
 }
 
-UDP::~UDP() {
+UDPSock::~UDPSock() {
 	delete m_sbuf;
 	delete m_rbuf;
 }
 
-bool UDP::init_win_sock() {
-	if (WSAStartup(WINSOCK_VERSION, &m_wsa) != 0) {
-		cerr << " Windows Socket initialization error : " << WSAGetLastError() << endl;
-		return false;
-	}
-
-	return true;
-}
-
-bool UDP::finish_win_sock() {
-	if (WSACleanup() != 0) {
-		cerr << "Windows Socket termination error : " << WSAGetLastError() << endl;
-		return false;
-	}
-	return true;
-}
-
-
-bool UDP::init() {
-	if ((m_sock = socket(m_myself.sin_family, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
-		cerr << "Socket creationn error : " << WSAGetLastError() << endl;
-		return false;
-	}
-
-	if (bind(m_sock, (sockaddr*)&m_myself, sizeof(m_myself)) == SOCKET_ERROR) {
-		cerr << "Binding error : " << WSAGetLastError() << endl;
-		return false;
-	}
-
-	return true;
-}
-
-int UDP::_receive(char* buf, int buf_size) {
+int UDPSock::_receive(char* buf, int buf_size) {
 	FD_ZERO(&m_read_fds);
 	FD_SET(m_sock, &m_read_fds);
 
@@ -132,7 +172,7 @@ int UDP::_receive(char* buf, int buf_size) {
 	return recv_len;
 }
 
-bool UDP::_send(const char* packet, int packet_size) {
+bool UDPSock::_send(const char* packet, int packet_size) {
 	int ssize;
 	ssize = sendto(m_sock, packet, packet_size, 0, (sockaddr*)&m_to, m_to_len);
 	if (ssize == SOCKET_ERROR)
@@ -149,7 +189,7 @@ bool UDP::_send(const char* packet, int packet_size) {
 	return true;
 }
 
-bool UDP::_send_back(const char* packet, int packet_size) {
+bool UDPSock::_send_back(const char* packet, int packet_size) {
 	int ssize;
 	ssize = sendto(m_sock, packet, packet_size, 0, (sockaddr*)&m_from, m_from_len);
 	if (ssize == SOCKET_ERROR)
@@ -166,7 +206,7 @@ bool UDP::_send_back(const char* packet, int packet_size) {
 }
 
 
-bool UDP::send(const char* data, int data_size) {
+bool UDPSock::send(const char* data, int data_size) {
 	int num_packs = 1+(data_size / m_max_dseg_size);
 	if ((data_size % m_max_dseg_size) != 0) {
 		num_packs++;
@@ -206,7 +246,7 @@ bool UDP::send(const char* data, int data_size) {
 	return true;
 }
 
-bool UDP::receive(char* buf, int buf_size, int& data_size, int& seq) {
+bool UDPSock::receive(char* buf, int buf_size, int& data_size, int& seq) {
 	Packet pack;
 	if (!_receive(pack)) {
 		return false;
@@ -246,44 +286,23 @@ bool UDP::receive(char* buf, int buf_size, int& data_size, int& seq) {
 	}
 }
 
-bool UDP::close() {
-	if (closesocket(m_sock) != 0) {
-		cerr << "Socket closing error : " << WSAGetLastError() << endl;
+void UDPSock::set_dseg_size(int sz) {
+	m_max_dseg_size = sz;
+}
+
+TCPSock::TCPSock() {
+	
+}
+
+bool TCPSock::init() {
+	if ((m_sock = socket(m_myself.sin_family, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
+		cerr << "Socket creationn error : " << WSAGetLastError() << endl;
 		return false;
 	}
-	return true;
-}
 
-void UDP::set_myself(const string& addr, int port) {
-	if (addr.empty())
-		m_myself.sin_addr.s_addr = INADDR_ANY;
-	else
-		m_myself.sin_addr.s_addr = inet_addr(addr.c_str());
-	m_myself.sin_port = htons(port);
-}
+	if (bind(m_sock, (sockaddr*)&m_myself, sizeof(m_myself)) == SOCKET_ERROR) {
+		cerr << "Binding error : " << WSAGetLastError() << endl;
+		return false;
+	}
 
-void UDP::set_sending_target(const string& addr, int port) {
-	if (addr.empty())
-		m_to.sin_addr.s_addr = inet_addr("127.0.0.1");
-	else
-		m_to.sin_addr.s_addr = inet_addr(addr.c_str());
-	m_to.sin_port = htons(port);
-}
-
-void UDP::set_recieving_target(const string& addr, int port) {
-	if (addr.empty())
-		m_from.sin_addr.s_addr = INADDR_ANY;
-	else
-		m_from.sin_addr.s_addr = inet_addr(addr.c_str());
-	m_from.sin_port = htons(port);
-}
-
-
-void UDP::set_timeout(int sec, int usec) {
-	m_timeout.tv_sec = sec;
-	m_timeout.tv_usec = usec;
-}
-
-void UDP::set_dseg_size(int sz) {
-	m_max_dseg_size = sz;
 }

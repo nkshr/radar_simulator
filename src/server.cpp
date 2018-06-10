@@ -115,7 +115,7 @@ int main()
 
 	//Vertex * simulator = static_cast<Vertex*>(new Simulator(sconfig));
 
-	if (!UDP::init_win_sock())
+	if (!Sock::init_win_sock())
 		return -1;
 
 	Board board;
@@ -129,7 +129,7 @@ int main()
 
 	board.run();
 
-	UDP::finish_win_sock();
+	Sock::finish_win_sock();
 	//simulator.simulate( radar, objects);
 
 	//CArray rx = simulator.get_rx();

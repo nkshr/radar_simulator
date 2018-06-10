@@ -7,7 +7,7 @@ using namespace std;
 
 class DataServer : public Module {
 private:
-	UDP m_udp;
+	UDPSock m_udp;
 
 public:
 	DataServer();

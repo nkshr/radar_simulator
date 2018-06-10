@@ -5,17 +5,22 @@
 
 using namespace std;
 
-class UDP {
+class Sock {
 public:
-	struct Packet {
-		int pack_size;
-		int seq;
-		
-		char* data;
-		int data_size;
-	};
+	static bool init_win_sock();
+	static bool finish_win_sock();
 
-private:
+	Sock();
+
+	bool init();
+	bool close();
+
+	void set_myself(const string& addr, int port);
+	void set_sending_target(const string& addr, int port);
+	void set_recieving_target(const string& addr, int port);
+	void set_timeout(int sec, int usec);
+
+protected:
 	SOCKET m_sock;
 	fd_set m_read_fds;
 
@@ -26,6 +31,19 @@ private:
 
 	static WSADATA m_wsa;
 
+};
+
+class UDPSock : public Sock{
+public:
+	struct Packet {
+		int pack_size;
+		int seq;
+		
+		char* data;
+		int data_size;
+	};
+
+private:
 	int m_max_dseg_size;
 
 	char* m_sbuf;
@@ -38,14 +56,9 @@ private:
 	static bool bclose_win_sock;
 
 public:
-	UDP();
-	~UDP();
+	UDPSock();
+	~UDPSock();
 
-	static bool init_win_sock();
-	static bool finish_win_sock();
-
-	bool init();
-	bool close();
 
 	bool _send(const char* packet, int packet_size);
 	bool _send_back(const char* packet, int packet_size);
@@ -57,9 +70,15 @@ public:
 	bool send(const char* data, int data_size);
 	bool receive(char* buf, int buf_size, int& data_size, int& seq);
 
-	void set_myself(const string& addr, int port);
-	void set_sending_target(const string& addr, int port);
-	void set_recieving_target(const string& addr, int port);
-	void set_timeout(int sec, int usec);
 	void set_dseg_size(int sz);
+};
+
+class TCPSock {
+public:
+	TCPSock();
+	bool init();
+
+private:
+	SOCKET m_sock;
+	sockaddr_in m_myself, m_to, m_from;
 };

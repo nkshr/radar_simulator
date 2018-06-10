@@ -50,7 +50,7 @@ int main(int argc, char ** argv) {
 		sport = 8080;
 	}
 
-	if (!UDP::init_win_sock())
+	if (!Sock::init_win_sock())
 		return -1;
 
 	CmdClient cmd_client;
@@ -78,6 +78,6 @@ int main(int argc, char ** argv) {
 		cout << cmd_client.get_get_result() << endl;
 	}
 
-	UDP::finish_win_sock();
+	Sock::finish_win_sock();
 	return 0;
 }
