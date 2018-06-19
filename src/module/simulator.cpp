@@ -13,11 +13,11 @@ using namespace std::chrono;
 using namespace std::this_thread;
 
 Simulator::Simulator() :  Module() {
-	register_port("max_depth", "", MemType::MT_INT, (Memory**)&m_max_depth);
+	//register_port("max_depth", "", MemType::MT_INT, (Memory**)&m_max_depth);
 }
 
-void Simulator::init(){
-
+bool Simulator::init(){
+	return true;
 }
 
 //void Simulator::simulate(const Radar &radar, std::vector<Object> &objects) {

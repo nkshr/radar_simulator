@@ -9,27 +9,22 @@
 
 using namespace std;
 
-//enum Cmd {
-//	VERTEX,
-//	EDGE,
-//	SET,
-//	START,
-//	STOP,
-//	CLOSE,
-//	LS,
-//	END,
-//	INVALID,
-//};
+const static string cmd_err_str = "err";
+const static string cmd_suc_str = "suc";
 
-const static string cmd_error_str = "cmd_error";
-const static string cmd_success_str = "cmd_success";
-
-//Cmd str_to_cmd(const string& str);
 //string cmd_to_str(const Cmd& cmd);
 
 void split(const string& buf, const string& delimes, vector<string>& toks);
 
 const static vector<string> cmd_strs = {"module", "signal", "set",  "run", "stop", "close", "ls"};
+enum CMD {
+	CMD_MODULE,
+	CMD_PORT_SET,
+	CMD_MOD_LS,
+	CMD_INVALID
+};
+
+CMD str_to_cmd(const string& str);
 
 struct CmdParser {
 	string cmd;
@@ -71,29 +66,29 @@ private:
 	UDPSock m_udp;
 };
 
-class CmdServer {
-public:
-	CmdServer();
-	bool init();
-	bool listen();
-
-	bool send_error(const string& msg);
-	bool send_success(const string& msg);
-
-	void set_server(const string& addr, int port);
-
-	const string& get_cmd() const;
-	const vector<string>& get_args() const;
-
-private:
-	char m_rmsg[config::buf_size];
-
-
-
-
-	UDPSock m_udp;
-	CmdParser m_cp;
-};
+//class CmdServer {
+//public:
+//	CmdServer();
+//	bool init();
+//	bool listen();
+//
+//	bool send_error(const string& msg);
+//	bool send_success(const string& msg);
+//
+//	void set_server(const string& addr, int port);
+//
+//	const string& get_cmd() const;
+//	const vector<string>& get_args() const;
+//
+//private:
+//	char m_rmsg[config::buf_size];
+//
+//
+//
+//
+//	UDPSock m_udp;
+//	CmdParser m_cp;
+//};
 
 struct string_comparator {
 	bool operator()(const char* str1, const char* str2) {

@@ -37,7 +37,7 @@ bool CmdClient::request(const string& cmd, const vector<string>& args) {
 	}
 
 
-	if (m_rmsg == cmd_error_str) {
+	if (m_rmsg == cmd_err_str) {
 		m_cmd_success = false;
 		if (m_udp._receive(m_rmsg, config::buf_size) <= 0) {
 			return false;
@@ -45,7 +45,7 @@ bool CmdClient::request(const string& cmd, const vector<string>& args) {
 		m_emsg = m_rmsg;
 		return true;
 	}
-	else if (m_rmsg == cmd_success_str) {
+	else if (m_rmsg == cmd_suc_str) {
 		m_cmd_success = true;
 	}
 
@@ -82,15 +82,15 @@ void CmdClient::set_client(const string& addr, int port) {
 	m_udp.set_myself(addr, port);
 }
 
-//Cmd str_to_cmd(const string& str) {
-//	for (int i = 0; i < cmd_strs.size(); ++i) {
-//		if (str == cmd_strs[i]) {
-//			return static_cast<Cmd>(i);
-//		}
-//	}
-//
-//	return Cmd::INVALID;
-//}
+CMD str_to_cmd(const string& str) {
+	for (int i = 0; i < cmd_strs.size(); ++i) {
+		if (str == cmd_strs[i]) {
+			return static_cast<CMD>(i);
+		}
+	}
+
+	return CMD_INVALID;
+}
 //
 //string cmd_to_str(const Cmd& cmd) {
 //	for (int i = 0; i < Cmd::END; ++i) {
@@ -126,59 +126,59 @@ void split(const string &buf, const string& delims, vector<string>& toks) {
 	}
 }
 
-CmdServer::CmdServer() {
-}
-
- bool CmdServer::init() {
-	return m_udp.init();
-}
-
-void CmdServer::set_server(const string& addr, int port) {
-	m_udp.set_myself(addr, port);
-}
-
-bool CmdServer::send_error(const string& msg) {
-	if(m_udp._send_back(cmd_error_str.c_str(), cmd_error_str.size()) < 0)
-		return false;
-
-	if (m_udp._send_back(msg.c_str(), msg.size()) < 0) {
-		return false;
-	}
-	return true;
-}
-
-bool CmdServer::send_success(const string& msg) {
-	if (m_udp._send_back(cmd_success_str.c_str(), cmd_success_str.size()) != cmd_success_str.size())
-		return false;
-
-	if (m_udp._send_back(msg.c_str(), msg.size()) != msg.size()) {
-		return false;
-	}
-	return true;
-}
-
-bool CmdServer::listen() {
-	if (m_udp._receive(m_rmsg, sizeof(m_rmsg)) <= 0) {
-		return false;
-	}
-	
-	m_cp.parse(m_rmsg);
-
-	if (m_cp.cmd.empty()) {
-		m_udp._send_back(cmd_error_str.c_str(), cmd_error_str.size());
-		return false;
-	}
-
-	return true;
-}
-
-const string& CmdServer::get_cmd() const {
-	return m_cp.cmd;
-}
-
-const vector<string>& CmdServer::get_args() const {
-	return m_cp.args;
-}
+//CmdServer::CmdServer() {
+//}
+//
+// bool CmdServer::init() {
+//	return m_udp.init();
+//}
+//
+//void CmdServer::set_server(const string& addr, int port) {
+//	m_udp.set_myself(addr, port);
+//}
+//
+//bool CmdServer::send_error(const string& msg) {
+//	if(m_udp._send_back(cmd_error_str.c_str(), cmd_error_str.size()) < 0)
+//		return false;
+//
+//	if (m_udp._send_back(msg.c_str(), msg.size()) < 0) {
+//		return false;
+//	}
+//	return true;
+//}
+//
+//bool CmdServer::send_success(const string& msg) {
+//	if (m_udp._send_back(cmd_success_str.c_str(), cmd_success_str.size()) != cmd_success_str.size())
+//		return false;
+//
+//	if (m_udp._send_back(msg.c_str(), msg.size()) != msg.size()) {
+//		return false;
+//	}
+//	return true;
+//}
+//
+//bool CmdServer::listen() {
+//	if (m_udp._receive(m_rmsg, sizeof(m_rmsg)) <= 0) {
+//		return false;
+//	}
+//	
+//	m_cp.parse(m_rmsg);
+//
+//	if (m_cp.cmd.empty()) {
+//		m_udp._send_back(cmd_error_str.c_str(), cmd_error_str.size());
+//		return false;
+//	}
+//
+//	return true;
+//}
+//
+//const string& CmdServer::get_cmd() const {
+//	return m_cp.cmd;
+//}
+//
+//const vector<string>& CmdServer::get_args() const {
+//	return m_cp.args;
+//}
 
 
 template <typename T>
@@ -193,3 +193,4 @@ Mutex::Mutex(mutex* lock) : m_lock(lock) {
 Mutex::~Mutex() {
 	m_lock->unlock();
 }
+

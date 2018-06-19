@@ -12,10 +12,12 @@
 #include "../signal/signal.hpp"
 
 enum MemType {
+	MT_BOOL,
 	MT_INT,
 	MT_FLOAT,
 	MT_DOUBLE,
 	MT_STRING,
+
 };
 
 class Memory {
@@ -44,40 +46,20 @@ private:
 	int m_value;
 };
 
+class MemBool : public Memory {
+public:
+	virtual bool set_value(const string& value);
+
+	bool set_value(bool value);
+	bool get_status();
+private:
+	bool m_status;
+};
+
 union MemPtr {
 	MemInt* mem_int;
 };
 
-//class Port {
-//public:
-//	string& get_name();
-//	virtual bool set_value(const string& value) = 0;
-//	virtual void update();
-//
-//	void add_connection(Port* port);
-//
-//protected:
-//	void lock();
-//	void unlock();
-//	string m_name;
-//	vector<Port*> m_dests;
-//
-//private:
-//	mutex* m_lock;
-//};
-
-//class PortInt : public Port {
-//private:
-//	int m_value;
-//	MemInt m_mem;
-//
-//public:
-//	int get_value();
-//	//virtual void set_value(int value);
-//	virtual void update();
-//
-//	void set_value(int value);
-//};
 
 struct Port {
 	string name;
@@ -103,6 +85,7 @@ public:
 	void processing_loop();
 	void stop();
 
+	virtual bool init() = 0;
 	virtual bool process() = 0;
 
 	//Port* get_port(const string& name);
@@ -121,10 +104,10 @@ protected:
 	PortMap m_ports;
 	MemMap m_mems;
 	void register_port(const string& name, const string& disc,
-		MemType mem_type, Memory** mem);
+		const string& value, MemType mem_type, Memory** mem);
 
 	Port* get_port(const string& name);
-	bool set_port(const string& name, const string& value);
+	bool set_value_to_port(const string& name, const string& value);
 
 	void lock();
 	void unlock();

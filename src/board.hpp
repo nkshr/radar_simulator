@@ -11,20 +11,14 @@ using namespace std;
 
 class Board;
 class Module;
-class Signal;
-
 
 void foo(const char*s);
 
-typedef Module* (Board::*mcreator)();
-typedef Signal* (Board::*screator)();
+typedef Module* (Board::*ModCreator)();
 
-typedef map<const string, Module*> mmap;
-typedef map<const string, Signal*> smap;
+typedef map<const string, Module*> ModMap;
 
-
-typedef map<const string, mcreator> mcmap;
-typedef map<const string, screator> scmap;
+typedef map<const string, ModCreator> ModCreatorMap;
 
 class Board {
 public:
@@ -38,10 +32,11 @@ public:
 	
 	void set_port(int port);
 
-	bool set_port(const string& module, const string& port, void* value);
+	bool set_value_to_port(const string& module, const string& port, const string& value);
 
 	bool create_module(const string& type, const string& name);
-	bool create_signal(const string& type, const string& name);
+	
+	bool init_all();
 
 	bool start(const string& vname);
 	void start_all();
@@ -54,31 +49,26 @@ public:
 	void lock();
 	void unlock();
 
-	const Signal* get_signal(const string& name);
 
 	bool connect(const string& mname0, const string& pname0,
 		const string& mname1, const string& pname1);
+
+	vector<string> get_mod_names() const;
 
 private:
 	mutex m_lock;
 
 	char m_cmd_buf[config::buf_size];
 
-	mmap m_modules;
-	smap m_signals;
+	ModMap m_modules;
 
-	mcmap m_mcreators;
-	scmap m_screators;
+	ModCreatorMap m_mcreators;
 
 	template<typename T>
 	Module* create_module();
-	template<typename T>
-	Signal* create_signal();
 
 	template<typename T>
 	void register_module(const string& type);
-	template<typename T>
-	void register_signal(const string& type);
 
-	CmdServer m_cmd_server;
+	//CmdServer m_cmd_server;
 };

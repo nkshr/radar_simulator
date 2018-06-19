@@ -9,6 +9,7 @@ void Memory::enable_rom(bool rom) {
 }
 
 bool MemInt::set_value(const string& value) {
+	m_value = stoi(value);
 	return true;
 }
 
@@ -27,6 +28,22 @@ int MemInt::get_value() {
 	return m_value;
 }
 
+bool MemBool::set_value(const string& value) {
+	if (value == "y" || value == "yes") {
+		m_status = true;
+	}
+	else if(value == "n" || value == "no"){
+		m_status = false;
+	}
+	else {
+		return false;
+	}
+	return true;
+}
+
+bool MemBool::get_status() {
+	return m_status;
+}
 //string& Port::get_name() {
 //	return m_name;
 //}
@@ -84,13 +101,14 @@ void Module::stop() {
 
 
 void Module::register_port(const string& name, const string& disc,
-	MemType mem_type, Memory** mem) {
+	const string& value, MemType mem_type, Memory** mem) {
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
 	port->mem_type = mem_type;
 	port->mem = mem;
 	m_ports.insert(pair<const string, Port*>(port->name, port));
+	set_value_to_port(port->name, value);
 }
 
 Port* Module::get_port(const string& name) {
@@ -119,7 +137,7 @@ bool Module::connect_port(const string& port_name, const string& mem_name) {
 	}
 }
 
-bool Module::set_port(const string& name, const string& value) {
+bool Module::set_value_to_port(const string& name, const string& value) {
 	PortMap::iterator pm_it = m_ports.find(name);
 	if (pm_it == m_ports.end())
 		return false;
@@ -132,6 +150,9 @@ bool Module::set_port(const string& name, const string& value) {
 	switch (pm_it->second->mem_type) {
 	case MT_INT:
 		mem = (Memory*)(new MemInt());
+		break;
+	case MT_BOOL:
+		mem = (Memory*)(new MemBool());
 		break;
 	default:
 		return false;

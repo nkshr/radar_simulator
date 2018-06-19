@@ -39,7 +39,7 @@ private:
 
 public:
 	Simulator();
-	void init();
+	virtual bool init();
 
 	virtual bool process();
 

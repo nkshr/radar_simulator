@@ -12,8 +12,8 @@ public:
 
 	Sock();
 
-	bool init();
-	bool close();
+	virtual bool init();
+	int close();
 
 	void set_myself(const string& addr, int port);
 	void set_sending_target(const string& addr, int port);
@@ -29,6 +29,8 @@ protected:
 
 	timeval m_timeout;
 
+	int m_sock_type;
+
 	static WSADATA m_wsa;
 
 };
@@ -43,22 +45,8 @@ public:
 		int data_size;
 	};
 
-private:
-	int m_max_dseg_size;
-
-	char* m_sbuf;
-	char* m_rbuf;
-
-	int m_sbuf_size;
-	int m_rbuf_size;
-
-	static bool binit_win_sock;
-	static bool bclose_win_sock;
-
-public:
 	UDPSock();
 	~UDPSock();
-
 
 	bool _send(const char* packet, int packet_size);
 	bool _send_back(const char* packet, int packet_size);
@@ -71,14 +59,32 @@ public:
 	bool receive(char* buf, int buf_size, int& data_size, int& seq);
 
 	void set_dseg_size(int sz);
-};
-
-class TCPSock {
-public:
-	TCPSock();
-	bool init();
 
 private:
-	SOCKET m_sock;
+	int m_max_dseg_size;
+
+	char* m_sbuf;
+	char* m_rbuf;
+
+	int m_sbuf_size;
+	int m_rbuf_size;
+
+	static bool binit_win_sock;
+	static bool bclose_win_sock;
+};
+
+class TCPServerSock : public Sock{
+public:
+	TCPServerSock();
+	int listen_msg();
+	int accept_client();
+
+	bool  shake_hands();
+	int receive_msg(char* buf, int buf_size);
+	int send_msg(const char* buf, int buf_size);
+	int shutdown_client();
+
+private:
+	SOCKET m_client_sock;
 	sockaddr_in m_myself, m_to, m_from;
 };

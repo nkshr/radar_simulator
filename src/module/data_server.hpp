@@ -13,4 +13,5 @@ public:
 	DataServer();
 	
 	virtual bool process();
+	virtual bool init() { return true; };
 };

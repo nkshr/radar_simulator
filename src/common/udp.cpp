@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include <WS2tcpip.h>
+
 #include "udp.hpp"
 
 using namespace std;
@@ -25,7 +27,7 @@ bool Sock::finish_win_sock() {
 
 Sock::Sock() {
 	memset(&m_myself, 0, sizeof(sockaddr_in));
-	//m_myself.sin_family = AF_INET;
+	m_myself.sin_family = AF_INET;
 	m_myself.sin_addr.s_addr = INADDR_ANY;
 	m_myself.sin_port = htons(8080);
 
@@ -39,7 +41,7 @@ Sock::Sock() {
 }
 
 bool Sock::init() {
-	if ((m_sock = socket(m_myself.sin_family, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
+	if ((m_sock = socket(m_myself.sin_family, m_sock_type, 0)) == INVALID_SOCKET) {
 		cerr << "Socket creationn error : " << WSAGetLastError() << endl;
 		return false;
 	}
@@ -52,12 +54,8 @@ bool Sock::init() {
 	return true;
 }
 
-bool Sock::close() {
-	if (closesocket(m_sock) != 0) {
-		cerr << "Socket closing error : " << WSAGetLastError() << endl;
-		return false;
-	}
-	return true;
+int Sock::close() {
+	return closesocket(m_sock);
 }
 
 void Sock::set_myself(const string& addr, int port) {
@@ -88,6 +86,15 @@ void Sock::set_recieving_target(const string& addr, int port) {
 void Sock::set_timeout(int sec, int usec) {
 	m_timeout.tv_sec = sec;
 	m_timeout.tv_usec = usec;
+}
+
+UDPSock::UDPSock() {
+	m_sock_type = SOCK_DGRAM;
+}
+
+UDPSock::~UDPSock() {
+	delete m_sbuf;
+	delete m_rbuf;
 }
 
 bool UDPSock::_send(const Packet& pack) {
@@ -137,14 +144,6 @@ bool UDPSock::_receive(Packet& pack) {
 	pack.data = tmp;
 	pack.data_size = pack.pack_size - isize * 2;
 	return true;
-}
-
-UDPSock::UDPSock() {
-}
-
-UDPSock::~UDPSock() {
-	delete m_sbuf;
-	delete m_rbuf;
 }
 
 int UDPSock::_receive(char* buf, int buf_size) {
@@ -290,19 +289,44 @@ void UDPSock::set_dseg_size(int sz) {
 	m_max_dseg_size = sz;
 }
 
-TCPSock::TCPSock() {
-	
+TCPServerSock::TCPServerSock() {
+	m_sock_type = SOCK_STREAM;
 }
 
-bool TCPSock::init() {
-	if ((m_sock = socket(m_myself.sin_family, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
-		cerr << "Socket creationn error : " << WSAGetLastError() << endl;
-		return false;
-	}
-
-	if (bind(m_sock, (sockaddr*)&m_myself, sizeof(m_myself)) == SOCKET_ERROR) {
-		cerr << "Binding error : " << WSAGetLastError() << endl;
-		return false;
-	}
-
+int TCPServerSock::listen_msg() {
+	return listen(m_sock, SOMAXCONN);
 }
+
+int TCPServerSock::accept_client() {
+	m_client_sock = accept(m_sock, NULL, NULL);
+	return m_client_sock;
+}
+
+bool TCPServerSock::shake_hands() {
+	int res = listen(m_sock, SOMAXCONN);
+	if (res == SOCKET_ERROR) {
+		cerr << "listen failfcled with error : " << WSAGetLastError() << endl;
+		return false;
+	}
+	return true;
+
+	m_client_sock = accept(m_sock, NULL, NULL);
+	if (m_client_sock == INVALID_SOCKET) {
+		cerr << "accept failed with error : " << WSAGetLastError() << endl;
+		return false;
+	}
+	return true;
+}
+
+int TCPServerSock::receive_msg(char* buf, int buf_size) {
+	return recv(m_client_sock, buf, buf_size, 0);
+}
+
+int TCPServerSock::send_msg(const char* buf, int buf_size) {
+	return send(m_client_sock, buf, buf_size, 0);
+}
+
+int TCPServerSock::shutdown_client() {
+	return shutdown(m_client_sock, SD_SEND);
+}
+
