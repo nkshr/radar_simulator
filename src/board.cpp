@@ -208,7 +208,7 @@ void Board::unlock() {
 //	m_cmd_server.set_server("128.0.0.1", 8080);
 //}
 
-bool Board::set_value_to_port(const string& module, const string& port, const string& value) {
+bool Board::set_data_to_port(const string& module, const string& port, const string& value) {
 	return true;
 }
 

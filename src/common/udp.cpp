@@ -289,20 +289,20 @@ void UDPSock::set_dseg_size(int sz) {
 	m_max_dseg_size = sz;
 }
 
-TCPServerSock::TCPServerSock() {
+TCPSock::TCPSock() {
 	m_sock_type = SOCK_STREAM;
 }
 
-int TCPServerSock::listen_msg() {
+int TCPSock::listen_msg() {
 	return listen(m_sock, SOMAXCONN);
 }
 
-int TCPServerSock::accept_client() {
+int TCPSock::accept_client() {
 	m_client_sock = accept(m_sock, NULL, NULL);
 	return m_client_sock;
 }
 
-bool TCPServerSock::shake_hands() {
+bool TCPSock::shake_hands() {
 	int res = listen(m_sock, SOMAXCONN);
 	if (res == SOCKET_ERROR) {
 		cerr << "listen failfcled with error : " << WSAGetLastError() << endl;
@@ -318,15 +318,18 @@ bool TCPServerSock::shake_hands() {
 	return true;
 }
 
-int TCPServerSock::receive_msg(char* buf, int buf_size) {
+int TCPSock::receive_msg(char* buf, int buf_size) {
 	return recv(m_client_sock, buf, buf_size, 0);
 }
 
-int TCPServerSock::send_msg(const char* buf, int buf_size) {
+int TCPSock::send_msg(const char* buf, int buf_size) {
 	return send(m_client_sock, buf, buf_size, 0);
 }
 
-int TCPServerSock::shutdown_client() {
+int TCPSock::shutdown_client() {
 	return shutdown(m_client_sock, SD_SEND);
 }
 
+int TCPSock::connect_server() {
+	return connect(m_sock, (sockaddr*)(&m_to), sizeof(m_to));
+}

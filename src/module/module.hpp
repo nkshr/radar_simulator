@@ -11,7 +11,7 @@
 #include "../board.hpp"
 #include "../signal/signal.hpp"
 
-enum MemType {
+enum MEM_TYPE {
 	MT_BOOL,
 	MT_INT,
 	MT_FLOAT,
@@ -22,9 +22,9 @@ enum MemType {
 
 class Memory {
 public:
-	virtual bool set_value(const string& value) = 0;
+	virtual bool set_data(const string& value) = 0;
 	bool is_rom() const;
-	MemType get_type() const;
+	MEM_TYPE get_type() const;
 	void enable_rom(bool rom);
 
 protected:
@@ -33,14 +33,16 @@ protected:
 private:
 	string m_name;
 	bool m_brom;
-	MemType m_mem_type;
+	MEM_TYPE m_mem_type;
 	
 };
 
 class MemInt : public Memory{
 public:
-	virtual bool set_value(const string& value);
+	//MemInt(int vlaue);
+	virtual bool set_data(const string& value);
 	void set_value(int value);
+
 	int get_value();
 private:
 	int m_value;
@@ -48,12 +50,21 @@ private:
 
 class MemBool : public Memory {
 public:
-	virtual bool set_value(const string& value);
+	virtual bool set_data(const string& value);
 
-	bool set_value(bool value);
+	bool set_data(bool value);
 	bool get_status();
 private:
 	bool m_status;
+};
+
+class MemString : public Memory {
+public:
+	virtual bool set_data(const string& value); 
+	void set_string(const string& str);
+	string& get_string();
+private:
+	string m_string;
 };
 
 union MemPtr {
@@ -65,7 +76,7 @@ struct Port {
 	string name;
 	string disc;
 	//MemPtr mem;
-	MemType mem_type;
+	MEM_TYPE mem_type;
 	Memory** mem;
 };
 
@@ -104,10 +115,14 @@ protected:
 	PortMap m_ports;
 	MemMap m_mems;
 	void register_port(const string& name, const string& disc,
-		const string& value, MemType mem_type, Memory** mem);
+		const string& data, MEM_TYPE mem_type, Memory** mem);
+	void register_port(const string& name, const string& disc,
+		int value, MemInt** mem);
+	void register_port(const string& name, const string& disc,
+		const string& str, MemString** mem);
 
 	Port* get_port(const string& name);
-	bool set_value_to_port(const string& name, const string& value);
+	bool set_data_to_port(const string& name, const string& value);
 
 	void lock();
 	void unlock();

@@ -22,6 +22,7 @@ set(COMMON_HPP_FILES
 set(MODULE_CPP_FILES
 	src/module/module.cpp
 	src/module/cmd_receiver.cpp
+	src/module/cmd_sender.cpp
 	src/module/data_server.cpp
 	src/module/modulator.cpp
 	src/module/simulator.cpp
@@ -30,6 +31,7 @@ set(MODULE_CPP_FILES
 set(MODULE_HPP_FILES
 	src/module/module.hpp
 	src/module/cmd_receiver.hpp
+	src/module/cmd_sender.hpp
 	src/module/data_server.hpp
 	src/module/simulator.hpp
 )

@@ -1,6 +1,6 @@
 #include "module.hpp"
 
-MemType Memory::get_type() const {
+MEM_TYPE Memory::get_type() const {
 	return m_mem_type;
 }
 
@@ -8,7 +8,11 @@ void Memory::enable_rom(bool rom) {
 	m_brom = rom;
 }
 
-bool MemInt::set_value(const string& value) {
+//MemInt::MemInt(int value) {
+//	m_value = value;
+//}
+
+bool MemInt::set_data(const string& value) {
 	m_value = stoi(value);
 	return true;
 }
@@ -28,7 +32,7 @@ int MemInt::get_value() {
 	return m_value;
 }
 
-bool MemBool::set_value(const string& value) {
+bool MemBool::set_data(const string& value) {
 	if (value == "y" || value == "yes") {
 		m_status = true;
 	}
@@ -44,6 +48,21 @@ bool MemBool::set_value(const string& value) {
 bool MemBool::get_status() {
 	return m_status;
 }
+
+bool MemString::set_data(const string& data) {
+	m_lock.lock();
+	m_string = data;
+	m_lock.unlock();
+	return true;
+}
+
+void MemString::set_string(const string& str) {
+	set_data(str);
+}
+
+string& MemString::get_string() {
+	return m_string;
+}
 //string& Port::get_name() {
 //	return m_name;
 //}
@@ -52,8 +71,8 @@ bool MemBool::get_status() {
 //	return m_mem.get_value();
 //}
 //
-//void PortInt::set_value(int value) {
-//	m_mem.set_value(value);
+//void PortInt::set_data(int value) {
+//	m_mem.set_data(value);
 //}
 //
 //void Port::add_connection(Port* port) {
@@ -101,14 +120,40 @@ void Module::stop() {
 
 
 void Module::register_port(const string& name, const string& disc,
-	const string& value, MemType mem_type, Memory** mem) {
+	const string& value, MEM_TYPE mem_type, Memory** mem) {
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
 	port->mem_type = mem_type;
 	port->mem = mem;
 	m_ports.insert(pair<const string, Port*>(port->name, port));
-	set_value_to_port(port->name, value);
+	set_data_to_port(port->name, value);
+}
+
+void Module::register_port(const string& name, const string& disc,
+	int value, MemInt** mem) {
+	Port* port = new Port;
+	port->name = name;
+	port->disc = disc;
+	port->mem_type = MEM_TYPE::MT_INT;
+	port->mem = (Memory**)(mem);
+	MemInt* tmp = new MemInt();
+	tmp->set_value(value);
+	*port->mem = tmp;
+	m_ports.insert(pair<const string, Port*>(port->name, port));
+}
+
+void Module::register_port(const string& name, const string& disc,
+	const string& str, MemString** mem) {
+	Port* port = new Port;
+	port->name = name;
+	port->disc = disc;
+	port->mem_type = MEM_TYPE::MT_STRING;
+	port->mem = (Memory**)(mem);
+	MemString* tmp = new MemString();
+	tmp->set_string(str);
+	*port->mem = tmp;
+	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
 
 Port* Module::get_port(const string& name) {
@@ -137,7 +182,7 @@ bool Module::connect_port(const string& port_name, const string& mem_name) {
 	}
 }
 
-bool Module::set_value_to_port(const string& name, const string& value) {
+bool Module::set_data_to_port(const string& name, const string& value) {
 	PortMap::iterator pm_it = m_ports.find(name);
 	if (pm_it == m_ports.end())
 		return false;
@@ -158,7 +203,7 @@ bool Module::set_value_to_port(const string& name, const string& value) {
 		return false;
 	}
 
-	if (!mem->set_value(value)) {
+	if (!mem->set_data(value)) {
 		delete mem;
 		return false;
 	}

@@ -5,22 +5,41 @@
 
 class CmdProcess {
 public:
-	CmdProcess(Board* board);
+	//CmdProcess(Board* board);
 
-	virtual bool operator()(vector<string> args) = 0;
+	virtual bool process(vector<string> args) = 0;
 
 	const string& get_msg() const;
+	const string& get_name() const;
+
+	//static void set_board(Board* board);
 
 protected:
 	Board* m_board;
 
 	string m_msg;
+
+	string m_name;
 };
+
+//Board* CmdProcess::m_board = nullptr;
 
 typedef map<const string, CmdProcess*> CmdProcMap;
 
 class CmdModule : public CmdProcess {
-	virtual bool operator()(vector<string> args);
+public:
+	//CmdModule(Board* board) : CmdProcess(board){};
+	virtual bool process(vector<string> args);
+};
+
+class CmdSet : public CmdProcess {
+public:
+	virtual bool process(vector<string> args);
+};
+
+class CmdLsMod : public CmdProcess {
+public:
+	virtual bool process(vector<string> args);
 };
 
 class CmdReceiver : public Module {
@@ -31,7 +50,7 @@ public:
 
 	virtual bool process();
 private:
-	TCPServerSock m_tcp_sock;
+	TCPSock m_tcp_sock;
 	
 	CmdParser m_cmd_parser;
 
@@ -41,7 +60,8 @@ private:
 	char m_recv_msg[1024];
 	int m_recv_msg_size;
 	
-	string m_send_msg;
-
 	CmdProcMap m_cmd_procs;
+
+	template <typename T>
+	void register_cmd_proc(const string& name);
 };

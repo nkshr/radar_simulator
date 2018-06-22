@@ -32,7 +32,7 @@ public:
 	
 	void set_port(int port);
 
-	bool set_value_to_port(const string& module, const string& port, const string& value);
+	bool set_data_to_port(const string& module, const string& port, const string& value);
 
 	bool create_module(const string& type, const string& name);
 	

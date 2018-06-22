@@ -73,9 +73,9 @@ private:
 	static bool bclose_win_sock;
 };
 
-class TCPServerSock : public Sock{
+class TCPSock : public Sock{
 public:
-	TCPServerSock();
+	TCPSock();
 	int listen_msg();
 	int accept_client();
 
@@ -83,8 +83,10 @@ public:
 	int receive_msg(char* buf, int buf_size);
 	int send_msg(const char* buf, int buf_size);
 	int shutdown_client();
+	int connect_server();
 
 private:
 	SOCKET m_client_sock;
 	sockaddr_in m_myself, m_to, m_from;
+
 };
