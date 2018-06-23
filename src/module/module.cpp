@@ -45,6 +45,12 @@ bool MemBool::set_data(const string& value) {
 	return true;
 }
 
+void MemBool::set_status(bool status) {
+	m_lock.lock();
+	m_status = status;
+	m_lock.unlock();
+}
+
 bool MemBool::get_status() {
 	return m_status;
 }
@@ -118,17 +124,31 @@ void Module::stop() {
 	m_brun = false;
 }
 
-
 void Module::register_port(const string& name, const string& disc,
-	const string& value, MEM_TYPE mem_type, Memory** mem) {
+	bool status, MemBool** mem) {
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
-	port->mem_type = mem_type;
-	port->mem = mem;
+	port->mem_type = MT_BOOL;
+	port->mem = (Memory**)mem;
+	
+	MemBool* tmp = new MemBool();
+	tmp->set_status(status);
+	*port->mem = tmp;
+
 	m_ports.insert(pair<const string, Port*>(port->name, port));
-	set_data_to_port(port->name, value);
 }
+
+//void Module::register_port(const string& name, const string& disc,
+//	const string& value, MEM_TYPE mem_type, Memory** mem) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->mem_type = mem_type;
+//	port->mem = mem;
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//	set_data_to_port(port->name, value);
+//}
 
 void Module::register_port(const string& name, const string& disc,
 	int value, MemInt** mem) {

@@ -4,7 +4,6 @@
 class CmdSender : public Module {
 private:
 	TCPSock m_tcp_sock;
-	MemBool* m_once;
 	MemBool* m_send;
 	MemString* m_cmd;
 	MemString* m_rcvr_addr;

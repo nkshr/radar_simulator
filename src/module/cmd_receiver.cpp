@@ -3,9 +3,9 @@
 //void CmdProcess::set_board(Board* board) {
 //	m_board = board;
 //}
-//CmdProcess::CmdProcess(Board* board) :  m_board(board){
-//
-//}
+CmdProcess::CmdProcess(Board* board) :  m_board(board){
+
+}
 
 const string& CmdProcess::get_msg() const {
 	return m_msg;
@@ -15,11 +15,27 @@ const string& CmdProcess::get_name() const {
 	return m_name;
 }
 
+CmdModule::CmdModule(Board* board) : CmdProcess(board){
+	vector<string> types = m_board->get_module_types();
+	m_disc = types[0];
+	if (types.size() == 0)
+		return;
+
+	for (int i = 1; i < types.size(); ++i) {
+		m_disc += '\n';
+		m_disc += types[i];
+	}
+}
 bool CmdModule::process(vector<string> args) {
 	if (args.size() < 1) {
 		m_msg = "Too few arguments.\n";
 		m_msg += "module <type> <name0> <name1>...";
 		return false;
+	}
+
+	if (args[0] == "--help") {
+		m_msg = m_disc;
+		return true;
 	}
 
 	string& type = args[0];
@@ -38,7 +54,7 @@ bool CmdSet::process(vector<string> args){
 }
 
 bool CmdLsMod::process(vector<string> args) {
-	vector<string> names = m_board->get_mod_names();
+	vector<string> names = m_board->get_module_names();
 	m_msg = names[0];
 	for(int i = 1; i < names.size(); ++i){
 		m_msg += +'\n';
@@ -48,8 +64,8 @@ bool CmdLsMod::process(vector<string> args) {
 }
 
 CmdReceiver::CmdReceiver() {
-	register_port("debug", "", "y", MEM_TYPE::MT_INT, (Memory**)&m_bdebug);
-
+	//register_port("debug", "", "y", MEM_TYPE::MT_INT, (Memory**)&m_bdebug);
+	register_port("debug", "Flag for debugging CmdReceiver.", false, &m_bdebug);
 	register_cmd_proc<CmdModule>("module");
 }
 
@@ -113,6 +129,6 @@ bool CmdReceiver::process() {
 
 template <typename T>
 void CmdReceiver::register_cmd_proc(const string& name) {
-	CmdProcess* cmd_proc = static_cast<CmdProcess*>(new T());
+	CmdProcess* cmd_proc = static_cast<CmdProcess*>(new T(m_board));
 	m_cmd_procs.insert(pair<string, CmdProcess*>(name, cmd_proc));
 }

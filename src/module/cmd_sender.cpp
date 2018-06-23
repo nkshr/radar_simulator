@@ -3,7 +3,10 @@
 #define FINISH "true && !m_once->get_status()"
 
 CmdSender::CmdSender() {
-
+	register_port("send", "Flag for sending command.", false, &m_send);
+	register_port("cmd", "<command> <arg0> <arg1> ...", "", &m_cmd);
+	register_port("addr", "String for containing receiver address.", "127.0.0.1", &m_rcvr_addr);
+	register_port("port", "Value for receiver port.", 8080, &m_rcvr_port);
 }
 
 bool CmdSender::process() {
@@ -16,27 +19,27 @@ bool CmdSender::process() {
 	int res = m_tcp_sock.connect_server();
 	if (res == SOCKET_ERROR) {
 		cerr << "connect failed with error : " << WSAGetLastError() << endl;
-		return !m_once->get_status();
+		return true;
 	}
 
 	string smsg;
 	res = m_tcp_sock.send_msg(smsg.c_str(), smsg.size());
 	if (res == SOCKET_ERROR) {
 		cerr << "send failed with error : " << WSAGetLastError() << endl;
-		return !m_once->get_status();
+		return true;
 	}
 
 	res = m_tcp_sock.receive_msg(m_rmsg, m_rmsg_size);
 	if (res == SOCKET_ERROR) {
 		cerr << "receive failed with error : " << WSAGetLastError() << endl;
-		return !m_once->get_status();
+		return true;
 	}
 	
 	if (m_rmsg == cmd_err_str) {
 		res = m_tcp_sock.receive_msg(m_rmsg, m_rmsg_size);
 		if (res == SOCKET_ERROR) {
 			cerr << "receive failed with error : " << WSAGetLastError() << endl;
-			return !m_once->get_status();
+			return true;
 		}
 		cerr << m_rmsg << endl;
 	}
@@ -44,7 +47,7 @@ bool CmdSender::process() {
 		res = m_tcp_sock.receive_msg(m_rmsg, m_rmsg_size);
 		if (res == SOCKET_ERROR) {
 			cerr << "receive failed with error : " << WSAGetLastError() << endl;
-			return !m_once->get_status();
+			return true;
 		}
 		cout << m_rmsg << endl;
 	}
@@ -52,7 +55,7 @@ bool CmdSender::process() {
 		cerr << "Invalid command result received. : " << m_rmsg << endl;
 	}
 	
-	return !m_once->get_status();
+	return true;
 }
 
 bool CmdSender::init() {

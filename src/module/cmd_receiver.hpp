@@ -5,7 +5,7 @@
 
 class CmdProcess {
 public:
-	//CmdProcess(Board* board);
+	CmdProcess(Board* board);
 
 	virtual bool process(vector<string> args) = 0;
 
@@ -20,6 +20,8 @@ protected:
 	string m_msg;
 
 	string m_name;
+
+	string m_disc;
 };
 
 //Board* CmdProcess::m_board = nullptr;
@@ -28,7 +30,7 @@ typedef map<const string, CmdProcess*> CmdProcMap;
 
 class CmdModule : public CmdProcess {
 public:
-	//CmdModule(Board* board) : CmdProcess(board){};
+	CmdModule(Board* board);
 	virtual bool process(vector<string> args);
 };
 

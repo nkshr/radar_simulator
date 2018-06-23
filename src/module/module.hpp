@@ -52,7 +52,7 @@ class MemBool : public Memory {
 public:
 	virtual bool set_data(const string& value);
 
-	bool set_data(bool value);
+	void set_status(bool status);
 	bool get_status();
 private:
 	bool m_status;
@@ -114,8 +114,10 @@ protected:
 
 	PortMap m_ports;
 	MemMap m_mems;
+	//void register_port(const string& name, const string& disc,
+	//	const string& data, MEM_TYPE mem_type, Memory** mem);
 	void register_port(const string& name, const string& disc,
-		const string& data, MEM_TYPE mem_type, Memory** mem);
+		bool status, MemBool** mem);
 	void register_port(const string& name, const string& disc,
 		int value, MemInt** mem);
 	void register_port(const string& name, const string& disc,
