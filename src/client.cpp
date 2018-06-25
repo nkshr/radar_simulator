@@ -4,80 +4,113 @@
 #include <vector>
 
 #include "common/miscel.hpp"
+#include "common/udp.hpp"
 
 using namespace std;
 
-void print_help() {
-}
-
 int main(int argc, char ** argv) {
-	if (argc < 2) {
-		print_help();
+	char* myself_addr = "127.0.0.1";
+	int myself_port = 8081;
+
+	char* target_addr = "127.0.0.1";
+	int target_port = 8080;
+
+	WSADATA wsa;
+	if (WSAStartup(WINSOCK_VERSION, &wsa) != 0) {
+		cerr << " Windows Socket initialization error : " << WSAGetLastError() << endl;
 		return -1;
 	}
 
-	string cmd = argv[1];
+	SOCKET myself_sock;
+	sockaddr_in myself;
+	memset(&myself, 0, sizeof(sockaddr_in));
+	myself.sin_family = AF_INET;
+	myself.sin_addr.s_addr = inet_addr(myself_addr);
+	myself.sin_port = htons(myself_port);
 
-	vector<string> args;
-	for (int i = 2; i < argc; ++i) {
-		args.push_back(argv[i]);
+	myself_sock = socket(myself.sin_family, SOCK_STREAM, 0);
+	if (myself_sock == INVALID_SOCKET) {
+		cerr << "Socket creation error : " << WSAGetLastError() << endl;
+		closesocket(myself_sock);
+		WSACleanup();
+		return -1;
 	}
 
-	string caddr, saddr;
-	int cport, sport;
+	sockaddr_in target;
+	memset(&target, 0, sizeof(sockaddr_in));
+	target.sin_family = AF_INET;
+	target.sin_addr.s_addr = inet_addr(target_addr);
+	target.sin_port = htons(target_port);
 
-	ifstream ifs;
-	ifs.open(".rsim");
-	if (ifs.is_open()) {
-		string buf;
-		getline(ifs, buf);
-		caddr = buf;
+	int res = connect(myself_sock, (sockaddr*)&(target), sizeof(target));
+	if (res == SOCKET_ERROR) {
+		cerr << "connect failed with error : " << WSAGetLastError() << endl;
+		closesocket(myself_sock);
+		WSACleanup();
+		return -1;
+	}
 
-		getline(ifs, buf);
-		cport = atoi(buf.c_str());
+	string smsg;
+	for (int i = 1; i < argc; ++i) {
+		smsg += string(argv[1]) + " ";
+	}
+	res = send(myself_sock, smsg.c_str(), smsg.size(), 0);
+	if (res == SOCKET_ERROR) {
+		cerr << "send failed with error : " << WSAGetLastError() << endl;
+		closesocket(myself_sock);
+		WSACleanup();
+		return -1;
+	}
 
-		getline(ifs, buf);
-		saddr = buf;
+	//res = shutdown(myself_sock, SD_SEND);
+	//if (res == SOCKET_ERROR) {
+	//	cerr << "shutdown failed with error : " << WSAGetLastError() << endl;
+	//	closesocket(myself_sock);
+	//	WSACleanup();
+	//	return -1;
+	//}
+
+	char rmsg[1024];
+	int rmsg_size = sizeof(rmsg);
+	res = recv(myself_sock, rmsg, rmsg_size, 0);
+	if (res == SOCKET_ERROR) {
+		cerr << "recv failed with error : " << WSAGetLastError() << endl;
+		closesocket(myself_sock);
+		WSACleanup();
+		return -1;
+	}
+
+	if (rmsg == cmd_err_str) {
+		res = recv(myself_sock, rmsg, rmsg_size, 0);
 		
-		getline(ifs, buf);
-		sport = atoi(buf.c_str());
-	}
-	else {
-		caddr = "127.0.0.1";
-		cport = 8081;
-
-		saddr = caddr;
-		sport = 8080;
-	}
-
-	if (!Sock::init_win_sock())
-		return -1;
-
-	CmdClient cmd_client;
-	cmd_client.set_client(caddr, cport);
-	cmd_client.set_server(saddr, sport);
-
-	if (!cmd_client.init())
-		return -1;
-
-	if (!cmd_client.request(cmd, args)) {
-		return -1;
-	}
-
-	if (!cmd_client.is_cmd_success()) {
-		cerr << cmd_client.get_error_msg() << endl;
-		return -1;
-	}
-
-	if (cmd == "ls") {
-		for each(const string& result in cmd_client.get_ls_results()) {
-			cout << result << endl;
+		if (res == SOCKET_ERROR) {
+			cerr << "recv failed with error : " << WSAGetLastError() << endl;
 		}
+		else {
+			cerr << rmsg << endl;
+		}
+
+		closesocket(myself_sock);
+		WSACleanup();
+		return -1;
 	}
-	else if (cmd == "get") {
-		cout << cmd_client.get_get_result() << endl;
+	else if (rmsg == cmd_suc_str) {
+		res = recv(myself_sock, rmsg, rmsg_size, 0);
+		if (res == SOCKET_ERROR) {
+			cerr << "recv failed with error : " << WSAGetLastError() << endl;
+			closesocket(myself_sock);
+			WSACleanup();
+			return -1;
+		}
+
+		cerr << rmsg << endl;
+		closesocket(myself_sock);
+		WSACleanup();
+		return 0;
 	}
 
-	Sock::finish_win_sock();
-	return 0;
+	cerr << "Invalid command result received. : " << rmsg << endl;
+	closesocket(myself_sock);
+	WSACleanup();
+	return -1l;
 }

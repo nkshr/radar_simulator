@@ -1,36 +1,105 @@
 #include <thread>
-#include <future>
-#include <mutex>
+//#include <mutex>
 #include <iostream>
 #include <string>
-#include <sstream>
 #include  <map>
 
 #include <WinSock2.h>
 
 #pragma comment(lib, "ws2_32.lib")
 
-#include "module/simulator.hpp"
+//#include "module/simulator.hpp"
+#include "module/module.hpp"
 #include "common/miscel.hpp"
 
 #include "board.hpp"
 
-using namespace std;
+//using std::cerr;
+//using namespace std;
+using std::cerr;
+using std::endl;
+using std::vector;
+using std::map;
+using std::string;
+using std::pair;
+CmdProcess::CmdProcess(Board* board) : m_board(board) {
+
+}
+
+const string& CmdProcess::get_msg() const {
+	return m_msg;
+}
+
+const string& CmdProcess::get_name() const {
+	return m_name;
+}
+
+CmdModule::CmdModule(Board* board) : CmdProcess(board) {
+	vector<string> types = m_board->get_module_types();
+	m_disc = types[0];
+	if (types.size() == 0)
+		return;
+
+	for (int i = 1; i < types.size(); ++i) {
+		m_disc += '\n';
+		m_disc += types[i];
+	}
+}
+bool CmdModule::process(vector<string> args) {
+	if (args.size() < 1) {
+		m_msg = "Too few arguments.\n";
+		m_msg += "module <type> <name0> <name1>...";
+		return false;
+	}
+
+	if (args[0] == "--help") {
+		m_msg = m_disc;
+		return true;
+	}
+
+	string& type = args[0];
+	string& name = args[1];
+	if (!m_board->create_module(type, name)) {
+		m_msg = "Couldn't create module " + type + " " + name + ".";
+		return false;
+	}
+
+	return true;
+}
+
+bool CmdSet::process(vector<string> args) {
+
+	return true;
+}
+
+bool CmdLsMod::process(vector<string> args) {
+	vector<string> names = m_board->get_module_names();
+	m_msg = names[0];
+	for (int i = 1; i < names.size(); ++i) {
+		m_msg += +'\n';
+		m_msg += names[i];
+	}
+	return true;
+}
+
+bool CmdFinish::process(vector<string> args) {
+	m_board->stop();
+	return true;
+}
 
 Board::Board() {
-	//m_cmd_server.set_server("", 8080);
-	/*CmdProcess cmd_process = [](vector<string> &args) {
-		if(args.size() 
-		return true; 
-	};
-	m_cmd_processes.insert(pair<const string, CmdProcess>(cmd_strs[CMD_SET], cmd_process));*/
+	memset(&m_myself, 0, sizeof(m_myself));
+	m_myself.sin_family = AF_INET;
+	m_myself.sin_addr.s_addr = inet_addr("127.0.0.1");
+	m_myself.sin_port = htons(8080);
 }
 
 bool Board::init() {
+	register_cmd_proc<CmdLsMod>("lsmod");
 	//if(!m_cmd_server.init())
 	//	return false;
 
-	register_module<Simulator>("simulator");
+	//register_module<Simulator>("simulator");
 
 	return true;
 }
@@ -39,45 +108,138 @@ bool Board::init_all() {
 
 	return true;
 }
+
 void Board::run() {
-	start_all();
-	//listen();
-	
-	for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
-		it->second->join();
+	WSADATA wsa;
+	if (WSAStartup(WINSOCK_VERSION, &wsa) != 0) {
+		cerr << " Windows Socket initialization error : " << WSAGetLastError() << endl;
+		return;
 	}
+
+	char recv_msg[1024];
+	int recv_msg_size = sizeof(recv_msg);
+
+	m_myself_sock = socket(m_myself.sin_family, SOCK_STREAM, 0);
+	if (m_myself_sock == INVALID_SOCKET) {
+		cerr << "Socket creation error : " << WSAGetLastError() << endl;
+		closesocket(m_myself_sock);
+		WSACleanup();
+		return;
+	}
+
+	int res = bind(m_myself_sock, (sockaddr*)&m_myself, sizeof(m_myself));
+	if (res == SOCKET_ERROR) {
+		cerr << "bind failed with error : " << WSAGetLastError() << endl;
+		return;
+	}
+
+	while (m_brun) {
+		res = listen(m_myself_sock, SOMAXCONN);
+		if (res == SOCKET_ERROR) {
+			cerr << "listen failed with error : " << WSAGetLastError() << endl;
+			break;
+		}
+
+		SOCKET target_sock = accept(m_myself_sock, NULL, NULL);
+		if (target_sock == INVALID_SOCKET) {
+			cerr << "accept failed with error : " << WSAGetLastError() << endl;
+			break;
+		}
+
+		res = recv(target_sock, recv_msg, recv_msg_size, 0);
+		if (res == SOCKET_ERROR) {
+			cerr << "recv failed with error : " << WSAGetLastError() << endl;
+			break;
+		}
+
+
+		vector<string> toks;
+		split(recv_msg, " \n", toks);
+
+		string& cmd = toks[0];
+
+		vector<string> args;
+		if (toks.size() > 1) {
+			args.assign(toks.begin() + 1, toks.end());
+		}
+
+		CmdProcMap::iterator cpm_it = m_cmd_procs.find(cmd);
+		if (cpm_it == m_cmd_procs.end()) {
+			res = send(target_sock, cmd_err_str.c_str(), cmd_err_str.size(), 0);
+			if (res != cmd_err_str.size()) {
+				cerr << "send failed with error : " << WSAGetLastError() << endl;
+				break;
+			}
+
+			string msg = "Invalid command " +  cmd + " received.";
+			res = send(target_sock, msg.c_str(), msg.size(), 0);
+			if (res != msg.size()) {
+				cerr << "send failed with error : " << WSAGetLastError() << endl;
+				break;
+			}
+
+		}
+		else {
+			CmdProcess* cmd_process = cpm_it->second;
+			if (cmd_process->process(args)) {
+				res = send(target_sock, cmd_suc_str.c_str(), cmd_suc_str.size(), 0);
+			}
+			else {
+				res = send(target_sock, cmd_err_str.c_str(), cmd_err_str.size(), 0);
+			}
+
+			if (res != cmd_suc_str.size()) {
+				cerr << "send failed with error : " << WSAGetLastError() << endl;
+				break;
+			}
+
+			const string& msg = cmd_process->get_msg();
+			res = res = send(target_sock, msg.c_str(), msg.size(), 0);
+			if (res != msg.size()) {
+				cerr << "send failed with error : " << WSAGetLastError() << endl;
+			}
+		}
+		closesocket(target_sock);
+	}
+
+	closesocket(m_myself_sock);
+	WSACleanup();
 }
 
-bool Board::start(const string& vname) {
+bool Board::run_module(const string& name) {
 	for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
-		if (it->first == vname) {
-			it->second->start();
+		if (it->first == name) {
+			it->second->run();
 			return true;
 		}
 	}
 
 	return false;
 }
-void Board::start_all() {
+void Board::run_all_modules() {
 	for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
-		it->second->start();
+		it->second->run();
 	}
 }
 
-void Board::stop_all() {
+void Board::stop_all_modules() {
 	for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
 		it->second->stop();
 	}
 }
 
-bool Board::stop(const string& vname) {
+bool Board::stop_module(const string& name) {
 	for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
-		if (it->first == vname) {
+		if (it->first == name) {
 			it->second->stop();
 			return true;
 		}
 	}
 	return false;
+}
+
+void Board::stop() {
+	m_brun = false;
 }
 
 void Board::lock() {
@@ -87,122 +249,6 @@ void Board::lock() {
 void Board::unlock() {
 	m_lock.unlock();
 }
-
-//void Board::listen() {
-//	while (true) {
-//		string smsg;
-//		char rmsg[config::buf_size];
-//		bool success = false;
-//
-//		if (!m_cmd_server.listen()) {
-//			continue;
-//		}
-//		
-//		const string& cmd = m_cmd_server.get_cmd();
-//		const vector<string>& args = m_cmd_server.get_args();
-//
-//		smsg.clear();
-//
-//		if (cmd == "module") {
-//			if (args.size() > 2) {
-//				const string& vname = args[0];
-//				const string& vtype = args[1];
-//				if (!create_module(vname, vtype)) {
-//					stringstream ss;
-//					ss << "Couldn't create a module : " << vname << " " << vtype;
-//					smsg = ss.str();
-//				}
-//				else {
-//					success = true;
-//				}
-//			}
-//			else {
-//				smsg = "Too few arguments for module command.";
-//				m_cmd_server.send_error(smsg);
-//			}
-//		}
-//		else if (cmd == "signal") {
-//			if (args.size() > 2) {
-//				const string& etype = args[0];
-//				const string& ename = args[1];
-//
-//				if (!create_signal(args[0], args[1])) {
-//					stringstream ss;
-//					ss << "Couldn't create a signal : " << etype << " " << ename;
-//					smsg = ss.str();
-//				}
-//				else {
-//					success = true;
-//				}
-//			}
-//			else {
-//				smsg = "Too few arguments for signal command.";
-//			}
-//		}
-//		else if (cmd == "stop") {
-//			if (!args.size()) {
-//				stop_all();
-//				success = true;
-//			}
-//			else {
-//				for (int i = 0; i < args.size(); ++i) {
-//
-//					if (!stop(args[i])) {
-//						smsg = "Couldn't find module " + args[i] + ".";
-//					}
-//				}
-//			}
-//		}
-//		else if (cmd == "close") {
-//			stop_all();
-//			success = true;
-//		}
-//		else if (cmd == "ls") {
-//			if (args.size() == 0) {
-//				smsg = "Too few arguments for ls.";
-//			}
-//			else if (args[0] == "module") {
-//				for each(pair<const string, Module*> module in m_modules) {
-//					smsg += module.first + "\n";
-//				}
-//				success = true;
-//			}
-//			else if (args[0] == "signal") {
-//				for each(pair<const string, Signal*> signal in m_signals) {
-//					smsg += signal.first + "\n";
-//				}
-//				success = true;
-//			}
-//			else {
-//				smsg = "Invalid arguent for ls. : " + args[0];
-//			}
-//		}
-//		else if (cmd == "start") {
-//			if (args.size() == 0) {
-//				start_all();
-//			}
-//			else {
-//				for (int i = 0; i < args.size(); ++i) {
-//					if (!start(args[i])) {
-//						break;
-//					}
-//				}
-//			}
-//		}
-//		else {
-//			smsg = "Invalid command. : " + args[0];
-//		}
-//
-//		smsg += '\0';
-//
-//		if (success)
-//			m_cmd_server.send_success(smsg);
-//		else
-//			m_cmd_server.send_error(smsg);
-//	}
-//
-//}
-
 
 //void Board::set_port(int port) {
 //	m_cmd_server.set_server("128.0.0.1", 8080);
@@ -260,4 +306,10 @@ vector<string> Board::get_module_types() const {
 		types.push_back(mcreator.first);
 	}
 	return types;
+}
+
+template <typename T>
+void Board::register_cmd_proc(const string& name) {
+	CmdProcess* cmd_proc = dynamic_cast<CmdProcess*>(new T(this));
+	m_cmd_procs.insert(pair<string, CmdProcess*>(name, cmd_proc));
 }
