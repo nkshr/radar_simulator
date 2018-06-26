@@ -54,6 +54,7 @@ int main(int argc, char ** argv) {
 	for (int i = 1; i < argc; ++i) {
 		smsg += string(argv[1]) + " ";
 	}
+	smsg += '\0';
 	res = send(myself_sock, smsg.c_str(), smsg.size(), 0);
 	if (res == SOCKET_ERROR) {
 		cerr << "send failed with error : " << WSAGetLastError() << endl;
@@ -71,6 +72,7 @@ int main(int argc, char ** argv) {
 	//}
 
 	char rmsg[1024];
+	memset(rmsg, 0, sizeof(rmsg));
 	int rmsg_size = sizeof(rmsg);
 	res = recv(myself_sock, rmsg, rmsg_size, 0);
 	if (res == SOCKET_ERROR) {
@@ -79,6 +81,7 @@ int main(int argc, char ** argv) {
 		WSACleanup();
 		return -1;
 	}
+	rmsg[res] = '\0';
 
 	if (rmsg == cmd_err_str) {
 		res = recv(myself_sock, rmsg, rmsg_size, 0);
