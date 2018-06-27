@@ -7,7 +7,6 @@
 #include "../common/object.hpp"
 #include "module.hpp"
 
-using namespace std;
 
 struct datum {
 	double x, t;

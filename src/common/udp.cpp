@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 
 #include <WS2tcpip.h>
@@ -8,20 +9,30 @@ using namespace std;
 
 WSADATA UDPSock::m_wsa;
 
-bool Sock::init_win_sock() {
+int get_last_sock_error() {
+#ifdef _WIN32
+	return WSAGetLastError();
+#endif
+}
+
+bool Sock::init_sock() {
+#ifdef _WIN32
 	if (WSAStartup(WINSOCK_VERSION, &m_wsa) != 0) {
 		cerr << " Windows Socket initialization error : " << WSAGetLastError() << endl;
 		return false;
 	}
+#endif //_WIN32 
 
 	return true;
 }
 
-bool Sock::finish_win_sock() {
+bool Sock::finish_sock() {
+#ifdef _WIN32
 	if (WSACleanup() != 0) {
 		cerr << "Windows Socket termination error : " << WSAGetLastError() << endl;
 		return false;
 	}
+#endif // _WIN32
 	return true;
 }
 
@@ -40,21 +51,23 @@ Sock::Sock() {
 	set_timeout(10, 0);
 }
 
-bool Sock::init() {
+
+bool Sock::create_sock() {
 	if ((m_sock = socket(m_myself.sin_family, m_sock_type, 0)) == INVALID_SOCKET) {
 		cerr << "Socket creationn error : " << WSAGetLastError() << endl;
 		return false;
 	}
+	return true;
+}
 
+bool UDPSock::bind_sock() {
 	if (bind(m_sock, (sockaddr*)&m_myself, sizeof(m_myself)) == SOCKET_ERROR) {
 		cerr << "Binding error : " << WSAGetLastError() << endl;
 		return false;
 	}
-
-	return true;
 }
 
-int Sock::close() {
+int Sock::close_sock() {
 	return closesocket(m_sock);
 }
 
@@ -305,31 +318,51 @@ int TCPSock::accept_client() {
 bool TCPSock::shake_hands() {
 	int res = listen(m_sock, SOMAXCONN);
 	if (res == SOCKET_ERROR) {
-		cerr << "listen failfcled with error : " << WSAGetLastError() << endl;
+		cerr << "listen failfcled with error : " << get_last_sock_error() << endl;
 		return false;
 	}
 	return true;
 
 	m_client_sock = accept(m_sock, NULL, NULL);
 	if (m_client_sock == INVALID_SOCKET) {
-		cerr << "accept failed with error : " << WSAGetLastError() << endl;
+		cerr << "accept failed with error : " << get_last_sock_error() << endl;
 		return false;
 	}
 	return true;
 }
 
-int TCPSock::receive_msg(char* buf, int buf_size) {
-	return recv(m_client_sock, buf, buf_size, 0);
+bool TCPSock::receive_msg(char* buf, int buf_size) {
+	int res = recv(m_client_sock, buf, buf_size, 0);
+	if (res == SOCKET_ERROR) {
+		cerr << "recv failed with error : " << get_last_sock_error() << endl;
+		return false;
+	}
+	return true;
 }
 
-int TCPSock::send_msg(const char* buf, int buf_size) {
-	return send(m_client_sock, buf, buf_size, 0);
+bool TCPSock::send_msg(const char* buf, int buf_size) {
+	int res = send(m_client_sock, buf, buf_size, 0);
+	if (res == SOCKET_ERROR) {
+		cerr << "send fialed with error : " << get_last_sock_error() << endl;
+		return false;
+	}
+	return true;
 }
 
-int TCPSock::shutdown_client() {
-	return shutdown(m_client_sock, SD_SEND);
+bool TCPSock::shutdown_client() {
+	int res =  shutdown(m_client_sock, SD_SEND);
+	if (res == SOCKET_ERROR) {
+		cerr << "shutdown fialed with error : " << get_last_sock_error() << endl;
+		return false;
+	}
+	return true;
 }
 
-int TCPSock::connect_server() {
-	return connect(m_sock, (sockaddr*)(&m_to), sizeof(m_to));
+bool TCPSock::connect_server() {
+	int res = connect(m_sock, (sockaddr*)(&m_to), sizeof(m_to));
+	if (res == SOCKET_ERROR) {
+		cerr << "shutdown fialed with error : " << get_last_sock_error() << endl;
+		return false;
+	}
+	return true;
 }

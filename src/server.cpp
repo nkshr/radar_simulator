@@ -83,67 +83,9 @@ inline CArray expand(const CArray &carray, const int new_size) {
 }
 int main()
 {
-	//const Complex test[] = { 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0 };
-	//CArray data(test, 8);
-
-	//// forward fft
-	//fft(data);
-
-	//std::cout << "fft" << std::endl;
-	//for (int i = 0; i < 8; ++i)
-	//{
-	//	std::cout << data[i] << std::endl;
-	//}
-
-	//// inverse fft
-	//ifft(data);
-
-	//std::cout << std::endl << "ifft" << std::endl;
-	//for (int i = 0; i < 8; ++i)
-	//{
-	//	std::cout << data[i] << std::endl;
-	//}
-	//SConfig sconfig;
-
-	//sconfig.radar.bandwidth = 10e6;
-	//sconfig.radar.pulse_width = 10e-6;
-	//sconfig.radar.gain = 1;
-	//sconfig.radar.sampling_rate = 1;
-
-	//std::vector<Object> objects;
-
-
-	//Vertex * simulator = static_cast<Vertex*>(new Simulator(sconfig));
-
-	if (!Sock::init_win_sock())
-		return -1;
 
 	Board board;
-	//graph.add_module(simulator);
-
-	board.init();
-	
-
-	//graph.create_module("cmd_receiver", "cmd_rcvr");
-	board.create_module("simulator", "sim");
-
 	board.run();
 
-	Sock::finish_win_sock();
-	//simulator.simulate( radar, objects);
-
-	//CArray rx = simulator.get_rx();
-	//write_data("rx.csv", rx, config::sample_time);
-	//
-	//CArray tx = simulator.get_tx();
-	//write_data("tx.csv", tx, config::sample_time);
-
-	//write_data("tx.csv", tx, 1024);
-
-	//tx = dft(tx);
-	//write_data("tx_fft.csv", tx, 1e-6, AMP);
-
-	//rx = dft(rx);
-	//write_data("rx_fft.csv", rx, 1e-6, REAL_AMP);
 	return 0;
 }

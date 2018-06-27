@@ -17,7 +17,7 @@ void CmdParser::parse(const string& buf) {
 
 
 bool CmdClient::init() {
-	return m_udp.init();
+	return true;// m_udp.init();
 }
 
 bool CmdClient::request(const string& cmd, const vector<string>& args) {
@@ -186,11 +186,11 @@ T* create_instance() {
 	return new T;
 }
 
-Mutex::Mutex(mutex* lock) : m_lock(lock) {
-	m_lock->lock();
-}
-
-Mutex::~Mutex() {
-	m_lock->unlock();
-}
+//Mutex::Mutex(mutex* lock) : m_lock(lock) {
+//	m_lock->lock();
+//}
+//
+//Mutex::~Mutex() {
+//	m_lock->unlock();
+//}
 

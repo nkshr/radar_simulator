@@ -5,9 +5,7 @@
 #include <ctime>
 #include <thread>
 
-using namespace std;
-using namespace std::chrono;
-using namespace std::this_thread;
+using std::chrono::steady_clock;
 
 class Clock {
 

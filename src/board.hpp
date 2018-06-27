@@ -67,6 +67,10 @@ public:
 	virtual bool process(vector<string> args);
 };
 
+class CmdPing : public CmdProcess {
+public:
+	virtual bool process(vector<string> args);
+};
 
 class Board {
 public:

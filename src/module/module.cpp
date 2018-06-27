@@ -1,5 +1,7 @@
 #include "module.hpp"
 
+using namespace std;
+
 MEM_TYPE Memory::get_type() const {
 	return m_mem_type;
 }
@@ -28,7 +30,7 @@ void MemInt::set_value(int value) {
 }
 
 int MemInt::get_value() {
-	Mutex lock(&m_lock);
+	//Mutex lock(&m_lock);
 	return m_value;
 }
 
@@ -97,7 +99,7 @@ string& MemString::get_string() {
 Module::Module() : m_brun(false) {
 }
 
-void Module::start() {
+void Module::run() {
 	m_th = thread(&Module::processing_loop, this);
 }
 

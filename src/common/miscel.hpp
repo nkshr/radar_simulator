@@ -2,12 +2,15 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include <mutex>
+//#include <mutex>
 
 #include "config.hpp"
 #include "udp.hpp"
 
-using namespace std;
+using std::string;
+using std::vector;
+using std::cerr;
+using std::endl;
 
 const static string cmd_err_str = "err";
 const static string cmd_suc_str = "suc";
@@ -117,10 +120,10 @@ private:
 template <typename T>
 T* create_instance();
 
-class Mutex {
-public:
-	Mutex(mutex* lock);
-	~Mutex();
-private:
-	mutex* m_lock;
-};
+//class Mutex {
+//public:
+//	Mutex(mutex* lock);
+//	~Mutex();
+//private:
+//	mutex* m_lock;
+//};

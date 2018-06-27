@@ -3,17 +3,18 @@
 
 #include <WinSock2.h>
 
-using namespace std;
+using std::string;
+//using std::vector;
 
 class Sock {
 public:
-	static bool init_win_sock();
-	static bool finish_win_sock();
+	static bool init_sock();
+	static bool finish_sock();
 
 	Sock();
 
-	virtual bool init();
-	int close();
+	bool create_sock();
+	int close_sock();
 
 	void set_myself(const string& addr, int port);
 	void set_sending_target(const string& addr, int port);
@@ -48,6 +49,7 @@ public:
 	UDPSock();
 	~UDPSock();
 
+	bool bind_sock();
 	bool _send(const char* packet, int packet_size);
 	bool _send_back(const char* packet, int packet_size);
 	int _receive(char* buf, int buf_size);
@@ -80,13 +82,15 @@ public:
 	int accept_client();
 
 	bool  shake_hands();
-	int receive_msg(char* buf, int buf_size);
-	int send_msg(const char* buf, int buf_size);
-	int shutdown_client();
-	int connect_server();
+	bool receive_msg(char* buf, int buf_size);
+	bool send_msg(const char* buf, int buf_size);
+	bool shutdown_client();
+	bool connect_server();
 
 private:
 	SOCKET m_client_sock;
 	sockaddr_in m_myself, m_to, m_from;
 
 };
+
+int get_last_sock_error();

@@ -1,15 +1,15 @@
 #pragma once
 //#include <map>
-#include <set>
 #include <string>
-#include <typeinfo>
-#include <mutex>
+#include <thread>
 
-#include "../common/clock.hpp"
+using std::thread;
+using std::string;
+
+//#include "../common/clock.hpp"
 #include "../common/miscel.hpp"
 
 #include "../board.hpp"
-#include "../signal/signal.hpp"
 
 enum MEM_TYPE {
 	MT_BOOL,
@@ -91,7 +91,7 @@ class Module {
 public:
 
 	Module();
-	void start();
+	void run();
 	void join();
 	void processing_loop();
 	void stop();

@@ -14,8 +14,7 @@
 
 #include "board.hpp"
 
-//using std::cerr;
-//using namespace std;
+using std::cout;
 using std::cerr;
 using std::endl;
 using std::vector;
@@ -87,15 +86,21 @@ bool CmdFinish::process(vector<string> args) {
 	return true;
 }
 
+bool CmdPing::process(vector<string> args) {
+	m_msg = "rsimg running";
+	return true;
+}
+
 Board::Board() {
 	memset(&m_myself, 0, sizeof(m_myself));
 	m_myself.sin_family = AF_INET;
 	m_myself.sin_addr.s_addr = inet_addr("127.0.0.1");
 	m_myself.sin_port = htons(8080);
+
+	register_cmd_proc<CmdLsMod>("lsmod");
 }
 
 bool Board::init() {
-	register_cmd_proc<CmdLsMod>("lsmod");
 	//if(!m_cmd_server.init())
 	//	return false;
 
@@ -151,7 +156,7 @@ void Board::run() {
 			cerr << "recv failed with error : " << WSAGetLastError() << endl;
 			break;
 		}
-
+		cout << recv_msg << " received." << endl;
 
 		vector<string> toks;
 		split(recv_msg, " \n", toks);
