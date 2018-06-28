@@ -64,11 +64,13 @@ public:
 
 class CmdFinish : public CmdProcess {
 public:
+	CmdFinish(Board* board) : CmdProcess(board) {};
 	virtual bool process(vector<string> args);
 };
 
 class CmdPing : public CmdProcess {
 public:
+	CmdPing(Board* board) : CmdProcess(board) {};
 	virtual bool process(vector<string> args);
 };
 

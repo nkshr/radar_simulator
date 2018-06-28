@@ -98,6 +98,8 @@ Board::Board() {
 	m_myself.sin_port = htons(8080);
 
 	register_cmd_proc<CmdLsMod>("lsmod");
+	register_cmd_proc<CmdFinish>("finish");
+	register_cmd_proc<CmdPing>("ping");
 }
 
 bool Board::init() {
