@@ -14,6 +14,8 @@
 
 #include "board.hpp"
 
+#include "module/data_server.hpp"
+
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -21,6 +23,7 @@ using std::vector;
 using std::map;
 using std::string;
 using std::pair;
+
 CmdProcess::CmdProcess(Board* board) : m_board(board) {
 
 }
@@ -34,15 +37,6 @@ const string& CmdProcess::get_name() const {
 }
 
 CmdModule::CmdModule(Board* board) : CmdProcess(board) {
-	vector<string> types = m_board->get_module_types();
-	m_disc = types[0];
-	if (types.size() == 0)
-		return;
-
-	for (int i = 1; i < types.size(); ++i) {
-		m_disc += '\n';
-		m_disc += types[i];
-	}
 }
 bool CmdModule::process(vector<string> args) {
 	if (args.size() < 1) {
@@ -52,7 +46,13 @@ bool CmdModule::process(vector<string> args) {
 	}
 
 	if (args[0] == "--help") {
-		m_msg = m_disc;
+		vector<string> types = m_board->get_module_types();
+
+		m_msg = "";
+		for (int i = 0; i < types.size(); ++i) {
+			m_msg += types[i] + '\n';
+		}
+		m_msg[m_msg.size()-1] = '\0';
 		return true;
 	}
 
@@ -73,11 +73,16 @@ bool CmdSet::process(vector<string> args) {
 
 bool CmdLsMod::process(vector<string> args) {
 	vector<string> names = m_board->get_module_names();
-	m_msg = names[0];
-	for (int i = 1; i < names.size(); ++i) {
-		m_msg += +'\n';
-		m_msg += names[i];
+
+	if (names.size() == 0) {
+		return true;
 	}
+
+	m_msg = "";
+	for (int i = 0; i < names.size(); ++i) {
+		m_msg += names[i] + '\n';
+	}
+	m_msg[m_msg.size() - 1] = '\0';
 	return true;
 }
 
@@ -87,7 +92,7 @@ bool CmdFinish::process(vector<string> args) {
 }
 
 bool CmdPing::process(vector<string> args) {
-	m_msg = "rsimg running";
+	m_msg = "rsim running";
 	return true;
 }
 
@@ -100,6 +105,9 @@ Board::Board() {
 	register_cmd_proc<CmdLsMod>("lsmod");
 	register_cmd_proc<CmdFinish>("finish");
 	register_cmd_proc<CmdPing>("ping");
+	register_cmd_proc<CmdModule>("module");
+
+	register_module<DataServer>("data_server");
 }
 
 bool Board::init() {

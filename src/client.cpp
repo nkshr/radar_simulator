@@ -52,7 +52,7 @@ int main(int argc, char ** argv) {
 
 	string smsg;
 	for (int i = 1; i < argc; ++i) {
-		smsg += string(argv[1]) + " ";
+		smsg += string(argv[i]) + " ";
 	}
 	smsg += '\0';
 	res = send(myself_sock, smsg.c_str(), smsg.size(), 0);

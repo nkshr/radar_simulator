@@ -40,7 +40,7 @@ protected:
 
 	string m_name;
 
-	string m_disc;
+	//string m_disc;
 };
 
 typedef map<const string, CmdProcess*> CmdProcMap;
