@@ -67,11 +67,40 @@ bool CmdModule::process(vector<string> args) {
 }
 
 bool CmdSet::process(vector<string> args) {
+	if (args.size() != 3) {
+		m_msg = "Too few argument\n";
+		m_msg += "set <module> <port> <data>";
+		return false;
+	}
 
+	string& module = args[0];
+	string& port = args[1];
+	string& data = args[2];
+	if (!m_board->set_data(module, port, data)) {
+		m_msg = "Couldn't set " +  data + " to " + port + " of " + module + ".";
+		return false;
+	}
+	return true;
+}
+
+bool CmdGet::process(vector<string> args) {
+	if (args.size() != 2) {
+		m_msg = "Too few argument\n";
+		m_msg += "get <module> <port>";
+		return false;
+	}
+
+	string& module = args[0];
+	string& port = args[1];
+	if (m_board->get_data(module, port, m_msg)) {
+		m_msg = "Couldn't find " + port + " of " + module + ".";
+		return false;
+	}
 	return true;
 }
 
 bool CmdLsMod::process(vector<string> args) {
+	m_msg = "";
 	vector<string> names = m_board->get_module_names();
 
 	if (names.size() == 0) {
@@ -81,6 +110,28 @@ bool CmdLsMod::process(vector<string> args) {
 	m_msg = "";
 	for (int i = 0; i < names.size(); ++i) {
 		m_msg += names[i] + '\n';
+	}
+	m_msg[m_msg.size() - 1] = '\0';
+	return true;
+}
+
+bool CmdLsPort::process(vector<string> args) {
+	m_msg = "";
+	if (args.size() != 1) {
+		m_msg = "Too few arguments.\n";
+		m_msg += "rsim lsport <module>";
+		return false;
+	}
+
+	string& mname = args[0];
+	vector<string> names;
+	if (!m_board->get_port_names(mname, names)) {
+		m_msg = "Couldn't find " + mname + ".";
+		return false;
+	}
+
+	for (int i = 0; i < names.size(); ++i) {
+		m_msg += names[i] + "\n";
 	}
 	m_msg[m_msg.size() - 1] = '\0';
 	return true;
@@ -103,9 +154,12 @@ Board::Board() {
 	m_myself.sin_port = htons(8080);
 
 	register_cmd_proc<CmdLsMod>("lsmod");
+	register_cmd_proc<CmdLsPort>("lsport");
 	register_cmd_proc<CmdFinish>("finish");
 	register_cmd_proc<CmdPing>("ping");
 	register_cmd_proc<CmdModule>("module");
+	register_cmd_proc<CmdSet>("set");
+	register_cmd_proc<CmdGet>("get");
 
 	register_module<DataServer>("data_server");
 }
@@ -265,12 +319,24 @@ void Board::unlock() {
 	m_lock.unlock();
 }
 
-//void Board::set_port(int port) {
-//	m_cmd_server.set_server("128.0.0.1", 8080);
-//}
+bool Board::set_data(const string& mname, const string& pname, const string& data) {
+	ModMap::iterator mm_it = m_modules.find(mname);
+	if (mm_it == m_modules.end()) {
+		return false;
+	}
 
-bool Board::set_data_to_port(const string& module, const string& port, const string& value) {
-	return true;
+	Module* module = mm_it->second;
+	return module->set_data(pname, data);
+}
+
+bool Board::get_data(const string& mname, const string& pname, string& data) {
+	ModMap::iterator mm_it = m_modules.find(mname);
+	if (mm_it == m_modules.end()) {
+		return false;
+	}
+
+	Module* module = mm_it->second;
+	return module->get_data(pname, data);
 }
 
 bool Board::create_module(const string& type, const string& name) {
@@ -321,6 +387,15 @@ vector<string> Board::get_module_types() const {
 		types.push_back(mcreator.first);
 	}
 	return types;
+}
+
+bool Board::get_port_names(const string& mname, vector<string>& names) const {
+	ModMap::const_iterator mm_it = m_modules.find(mname);
+	if (mm_it == m_modules.end()) {
+		return false;
+	}
+	mm_it->second->get_port_names(names);
+	return true;
 }
 
 template <typename T>

@@ -10,6 +10,10 @@ void Memory::enable_rom(bool rom) {
 	m_brom = rom;
 }
 
+string Memory::get_data() {
+	return string();
+}
+
 //MemInt::MemInt(int value) {
 //	m_value = value;
 //}
@@ -55,6 +59,12 @@ void MemBool::set_status(bool status) {
 
 bool MemBool::get_status() {
 	return m_status;
+}
+
+string MemBool::get_data() {
+	if (m_status)
+		return "y";
+	return "n";
 }
 
 bool MemString::set_data(const string& data) {
@@ -204,7 +214,7 @@ bool Module::connect_port(const string& port_name, const string& mem_name) {
 	}
 }
 
-bool Module::set_data_to_port(const string& name, const string& value) {
+bool Module::set_data(const string& name, const string& value) {
 	PortMap::iterator pm_it = m_ports.find(name);
 	if (pm_it == m_ports.end())
 		return false;
@@ -231,6 +241,24 @@ bool Module::set_data_to_port(const string& name, const string& value) {
 	}
 	mem->enable_rom(true);
 	return true;
+}
+
+bool Module::get_data(const string& name, string& data) {
+	PortMap::iterator pm_it = m_ports.find(name);
+	if (pm_it == m_ports.end())
+		return false;
+
+	Memory* mem = *(pm_it->second->mem);
+	data = mem->get_data();
+	return true;
+}
+
+void Module::get_port_names(vector<string>& names) {
+	names.reserve(m_ports.size());
+
+	for each(pair<string, Port*> port in m_ports){
+		names.push_back(port.second->name);
+	}
 }
 
 void Module::lock() {

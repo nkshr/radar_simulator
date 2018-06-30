@@ -23,6 +23,8 @@ enum MEM_TYPE {
 class Memory {
 public:
 	virtual bool set_data(const string& value) = 0;
+	virtual string get_data();
+
 	bool is_rom() const;
 	MEM_TYPE get_type() const;
 	void enable_rom(bool rom);
@@ -51,6 +53,7 @@ private:
 class MemBool : public Memory {
 public:
 	virtual bool set_data(const string& value);
+	virtual string get_data();
 
 	void set_status(bool status);
 	bool get_status();
@@ -102,6 +105,9 @@ public:
 	//Port* get_port(const string& name);
 
 	bool connect_port(const string& port_name, const string& mem_name);
+	bool set_data(const string& name, const string& data);
+	bool get_data(const string& name, string& data);
+	void get_port_names(vector<string>& names);
 
 protected:
 	bool m_brun;
@@ -124,7 +130,6 @@ protected:
 		const string& str, MemString** mem);
 
 	Port* get_port(const string& name);
-	bool set_data_to_port(const string& name, const string& value);
 
 	void lock();
 	void unlock();

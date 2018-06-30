@@ -53,12 +53,25 @@ public:
 
 class CmdSet : public CmdProcess {
 public:
+	CmdSet(Board* board) : CmdProcess(board) {};
+	virtual bool process(vector<string> args);
+};
+
+class CmdGet : public CmdProcess {
+public:
+	CmdGet(Board* board) : CmdProcess(board) {};
 	virtual bool process(vector<string> args);
 };
 
 class CmdLsMod : public CmdProcess {
 public:
 	CmdLsMod(Board* board) : CmdProcess(board) {};
+	virtual bool process(vector<string> args);
+};
+
+class CmdLsPort : public CmdProcess {
+public:
+	CmdLsPort(Board* board) : CmdProcess(board) {};
 	virtual bool process(vector<string> args);
 };
 
@@ -84,9 +97,9 @@ public:
 	void remove();
 	//void listen();
 	
-	void set_port(int port);
 
-	bool set_data_to_port(const string& module, const string& port, const string& value);
+	bool set_data(const string& module, const string& port, const string& value);
+	bool get_data(const string& module, const string& port, string& data);
 
 	bool create_module(const string& type, const string& name);
 	
@@ -111,6 +124,7 @@ public:
 
 	vector<string> get_module_names() const;
 	vector<string> get_module_types() const;
+	bool get_port_names(const string& mname, vector<string>& names) const;
 private:
 	bool m_brun;
 
