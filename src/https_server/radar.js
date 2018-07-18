@@ -15,8 +15,8 @@ function loadFile(url){
 }
 
 function Vec2(x, y){
-    this.x;
-    this.y;
+    this.x = x;
+    this.y = y;
 }
 
 function createCircleVertices(x, y, r, s){
@@ -25,7 +25,7 @@ function createCircleVertices(x, y, r, s){
     for(var i = 0; i < s; ++i){
 	var _x = Math.cos(step*i) * r + x;
 	var _y = Math.sin(step*i) * r + y;
-	//vertexs.push(new Vec2(x, y));
+	//vertices.push(new Vec2(_x, _y));
 	vertices.push(_x);
 	vertices.push(_y);
     }
@@ -112,18 +112,29 @@ gl.vertexAttribPointer(coord, 2, gl.FLOAT, false, 0, 0);
 gl.enableVertexAttribArray(coord);
 
 /* Step5: Drawing the required object (triangle) */
+function draw(){
+    // Clear the canvas
+    gl.clearColor(0.5, 0.5, 0.5, 0.9);
 
-// Clear the canvas
-gl.clearColor(0.5, 0.5, 0.5, 0.9);
+    // Enable the depth test
+    gl.enable(gl.DEPTH_TEST); 
 
-// Enable the depth test
-gl.enable(gl.DEPTH_TEST); 
+    // Clear the color buffer bit
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
-// Clear the color buffer bit
-gl.clear(gl.COLOR_BUFFER_BIT);
+    // Set the view port
+    gl.viewport(0,0,canvas.width,canvas.height);
 
-// Set the view port
-gl.viewport(0,0,canvas.width,canvas.height);
+    // Draw the triangle
+    gl.drawArrays(gl.LINE_LOOP, 0, 100);
+}
 
-// Draw the triangle
-gl.drawArrays(gl.LINE_LOOP, 0, 100);
+var idx = 0;
+function process(){
+    draw();
+    document.getElementById("lat").innerHTML = idx;
+    var now = new Date();
+    document.getElementById("time").innerHTML = now;
+}
+
+setInterval('process()', 1000);
