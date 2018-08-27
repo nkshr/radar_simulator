@@ -1,4 +1,8 @@
+//#include <pair>
+
 #include "cmd_sender.hpp"
+
+using namespace std;
 
 #define FINISH "true && !m_once->get_status()"
 
