@@ -1,67 +1,10 @@
 #include "cmd_receiver.hpp"
 
+using namespace std;
+
 //void CmdProcess::set_board(Board* board) {
 //	m_board = board;
 //}
-CmdProcess::CmdProcess(Board* board) :  m_board(board){
-
-}
-
-const string& CmdProcess::get_msg() const {
-	return m_msg;
-}
-
-const string& CmdProcess::get_name() const {
-	return m_name;
-}
-
-CmdModule::CmdModule(Board* board) : CmdProcess(board){
-	vector<string> types = m_board->get_module_types();
-	m_disc = types[0];
-	if (types.size() == 0)
-		return;
-
-	for (int i = 1; i < types.size(); ++i) {
-		m_disc += '\n';
-		m_disc += types[i];
-	}
-}
-bool CmdModule::process(vector<string> args) {
-	if (args.size() < 1) {
-		m_msg = "Too few arguments.\n";
-		m_msg += "module <type> <name0> <name1>...";
-		return false;
-	}
-
-	if (args[0] == "--help") {
-		m_msg = m_disc;
-		return true;
-	}
-
-	string& type = args[0];
-	string& name = args[1];
-	if (!m_board->create_module(type, name)) {
-		m_msg = "Couldn't create module " + type + " " + name + ".";
-		return false;
-	}
-
-	return true;
-}
-
-bool CmdSet::process(vector<string> args){
-	
-	return true;
-}
-
-bool CmdLsMod::process(vector<string> args) {
-	vector<string> names = m_board->get_module_names();
-	m_msg = names[0];
-	for(int i = 1; i < names.size(); ++i){
-		m_msg += +'\n';
-		m_msg += names[i];
-	}
-	return true;
-}
 
 CmdReceiver::CmdReceiver() {
 	//register_port("debug", "", "y", MEM_TYPE::MT_INT, (Memory**)&m_bdebug);
