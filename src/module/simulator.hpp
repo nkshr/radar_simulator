@@ -34,6 +34,7 @@ private:
 	SConfig m_sconfig;
 	MemInt* m_max_depth;
 
+	MemShip* m_onw_ship;
 	//RadarSignal *m_rs;
 
 public:

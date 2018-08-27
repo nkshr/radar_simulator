@@ -84,8 +84,9 @@ bool Simulator::process() {
 	}
 
 	r = simulate(m_sconfig.radar.pos, m_sconfig.radar.dir, m_last_pulse_time, cur_time, cur_time + m_clock.get_time_per_clock());
-	//m_rs->set_signal(r, cur_time);
-
+	
+	Ship own_ship;
+	m_onw_ship->set_ship(own_ship);
 	return true;
 }
 
