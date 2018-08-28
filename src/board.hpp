@@ -22,70 +22,6 @@ typedef map<const string, Module*> ModMap;
 typedef map<const string, ModCreator> ModCreatorMap;
 typedef map<const string, CmdProcess*> CmdProcMap;
 
-class CmdProcess {
-public:
-	CmdProcess(Board* board);
-
-	virtual bool process(vector<string> args) = 0;
-
-	const string& get_msg() const;
-	const string& get_name() const;
-
-	//static void set_board(Board* board);
-
-protected:
-	Board* m_board;
-
-	string m_msg;
-
-	string m_name;
-
-	//string m_disc;
-};
-
-typedef map<const string, CmdProcess*> CmdProcMap;
-
-class CmdModule : public CmdProcess {
-public:
-	CmdModule(Board* board);
-	virtual bool process(vector<string> args);
-};
-
-class CmdSet : public CmdProcess {
-public:
-	CmdSet(Board* board) : CmdProcess(board) {};
-	virtual bool process(vector<string> args);
-};
-
-class CmdGet : public CmdProcess {
-public:
-	CmdGet(Board* board) : CmdProcess(board) {};
-	virtual bool process(vector<string> args);
-};
-
-class CmdLsMod : public CmdProcess {
-public:
-	CmdLsMod(Board* board) : CmdProcess(board) {};
-	virtual bool process(vector<string> args);
-};
-
-class CmdLsPort : public CmdProcess {
-public:
-	CmdLsPort(Board* board) : CmdProcess(board) {};
-	virtual bool process(vector<string> args);
-};
-
-class CmdFinish : public CmdProcess {
-public:
-	CmdFinish(Board* board) : CmdProcess(board) {};
-	virtual bool process(vector<string> args);
-};
-
-class CmdPing : public CmdProcess {
-public:
-	CmdPing(Board* board) : CmdProcess(board) {};
-	virtual bool process(vector<string> args);
-};
 
 class Board {
 public:
@@ -113,7 +49,7 @@ public:
 	void stop_all_modules();
 	bool stop_module(const string& name);
 
-	void stop();
+	void finish();
 
 	void lock();
 	void unlock();
@@ -124,7 +60,10 @@ public:
 
 	vector<string> get_module_names() const;
 	vector<string> get_module_types() const;
+	ModMap& get_modules();
+
 	bool get_port_names(const string& mname, vector<string>& names) const;
+
 private:
 	bool m_brun;
 

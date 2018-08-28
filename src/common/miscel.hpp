@@ -15,6 +15,7 @@ using std::endl;
 const static string cmd_err_str = "err";
 const static string cmd_suc_str = "suc";
 
+#define PRINT_DMSG(msg) std::cout << msg << << " " << __FILEW__ <<  " " << __LINE__ << std::endl;
 //string cmd_to_str(const Cmd& cmd);
 
 void split(const string& buf, const string& delimes, vector<string>& toks);

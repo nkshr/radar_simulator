@@ -81,6 +81,7 @@ void MemString::set_string(const string& str) {
 string& MemString::get_string() {
 	return m_string;
 }
+
 //string& Port::get_name() {
 //	return m_name;
 //}
@@ -185,6 +186,15 @@ void Module::register_port(const string& name, const string& disc,
 	MemString* tmp = new MemString();
 	tmp->set_string(str);
 	*port->mem = tmp;
+	m_ports.insert(pair<const string, Port*>(port->name, port));
+}
+
+void Module::register_port(const string& name, const  string& disc,
+	bool init_status, bool* status) {
+	Port* port = new Port;
+	port->name = name;
+	port->disc = disc;
+	port->value.b = status;
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
 

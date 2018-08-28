@@ -2,9 +2,11 @@
 //#include <map>
 #include <string>
 #include <thread>
+#include <queue>
 
 using std::thread;
 using std::string;
+using std::queue;
 
 //#include "../common/clock.hpp"
 #include "../common/miscel.hpp"
@@ -23,6 +25,8 @@ enum MEM_TYPE {
 class Memory {
 public:
 	virtual bool set_data(const string& value) = 0;
+	//virtual void write(char* buf, int buf_size);
+	//virtual bool read(const char* buf, int buf_size);
 	virtual string get_data();
 
 	bool is_rom() const;
@@ -70,6 +74,19 @@ private:
 	string m_string;
 };
 
+struct LatLon {
+	double deg;
+	double min;
+	double sec;
+};
+
+struct Ship {
+	int mmsi;
+	double x, y, z;
+	LatLon lat, lon;
+};
+
+
 union MemPtr {
 	MemInt* mem_int;
 };
@@ -81,6 +98,12 @@ struct Port {
 	//MemPtr mem;
 	MEM_TYPE mem_type;
 	Memory** mem;
+	union Ptr {
+		bool* b;
+		int* i;
+		double* d;
+		string* s;
+	}value;
 };
 
 struct SignalPort : public Port {
@@ -128,6 +151,8 @@ protected:
 		int value, MemInt** mem);
 	void register_port(const string& name, const string& disc,
 		const string& str, MemString** mem);
+	void register_port(const string& name, const string& disc,
+		bool init_status, bool* status);
 
 	Port* get_port(const string& name);
 
