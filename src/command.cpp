@@ -123,11 +123,18 @@ bool CmdLsPort::process(vector<string> args) {
 
 bool CmdRun::process(vector<string> args) {
 	if (!args.size()) {
+		m_msg = "";
+
 		ModMap modules = m_board->get_modules();
 		for (ModMap::iterator it = modules.begin(); it != modules.end(); ++it) {
 			const string &name = it->first;
 			Module *module = it->second;			
 			module->run();
+			m_msg +=  name + " is  runninng.";
+			if (it != --modules.end()) {
+				m_msg += "\n";
+			}
+
 		}
 		return true;
 	}
@@ -135,8 +142,29 @@ bool CmdRun::process(vector<string> args) {
 }
 
 bool CmdFinish::process(vector<string> args) {
-	m_board->finish();
-	return true;
+	if (!args.size()) {
+		m_msg = "";
+
+		ModMap modules = m_board->get_modules();
+		for (ModMap::iterator it = modules.begin(); it != modules.end(); ++it) {
+			const string &name = it->first;
+				Module *module = it->second;
+			if (!module->finish()) {
+				m_msg += name + " finished abormally.";
+			}
+			else {
+				m_msg += name + " fineshed.";
+			}
+
+			if (it != --modules.end()) {
+				m_msg += "\n";
+			}
+
+		}
+
+		return true;
+	}
+	return false;
 }
 
 bool CmdPing::process(vector<string> args) {

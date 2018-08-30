@@ -3,10 +3,12 @@
 #include <string>
 #include <thread>
 #include <queue>
+#include <condition_variable>
 
 using std::thread;
 using std::string;
 using std::queue;
+using std::condition_variable;
 
 //#include "../common/clock.hpp"
 #include "../common/miscel.hpp"
@@ -134,14 +136,18 @@ public:
 
 protected:
 	bool m_brun;
+	bool m_bwait;
 
 	thread m_th;
+
+	condition_variable m_run;
 
 	Clock m_clock;
 
 	Board *m_board;
 
 	PortMap m_ports;
+
 	MemMap m_mems;
 	//void register_port(const string& name, const string& disc,
 	//	const string& data, MEM_TYPE mem_type, Memory** mem);

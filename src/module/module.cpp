@@ -120,10 +120,14 @@ void Module::join() {
 
 void Module::processing_loop() {
 	m_clock.start();
-	
+
 	while (true) {
-		if (!m_brun)
-			break;
+		{
+			unique_lock<mutex> lock(m_lock);
+			if (!m_brun) {
+				break;
+			}
+		}
 
 		if (!process()) {
 			break;
@@ -134,6 +138,7 @@ void Module::processing_loop() {
 }
 
 void Module::stop() {
+	unique_lock<mutex>(m_lock);
 	m_brun = false;
 }
 
