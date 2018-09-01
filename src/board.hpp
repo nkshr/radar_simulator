@@ -6,6 +6,8 @@
 #include "common/clock.hpp"
 #include "common/miscel.hpp"
 
+#include "memory/memory.hpp"
+
 using std::string;
 using std::map;
 using std::mutex;
@@ -21,6 +23,7 @@ typedef Module* (Board::*ModCreator)();
 typedef map<const string, Module*> ModMap;
 typedef map<const string, ModCreator> ModCreatorMap;
 typedef map<const string, CmdProcess*> CmdProcMap;
+typedef map<const string, Memory*> MemMap;
 
 
 class Board {

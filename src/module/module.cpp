@@ -2,86 +2,6 @@
 
 using namespace std;
 
-MEM_TYPE Memory::get_type() const {
-	return m_mem_type;
-}
-
-void Memory::enable_rom(bool rom) {
-	m_brom = rom;
-}
-
-string Memory::get_data() {
-	return string();
-}
-
-//MemInt::MemInt(int value) {
-//	m_value = value;
-//}
-
-bool MemInt::set_data(const string& value) {
-	m_value = stoi(value);
-	return true;
-}
-
-bool Memory::is_rom() const {
-	return m_brom;
-}
-
-void MemInt::set_value(int value) {
-	m_lock.lock();
-	m_value = value;
-	m_lock.unlock();
-}
-
-int MemInt::get_value() {
-	//Mutex lock(&m_lock);
-	return m_value;
-}
-
-bool MemBool::set_data(const string& value) {
-	if (value == "y" || value == "yes") {
-		m_status = true;
-	}
-	else if(value == "n" || value == "no"){
-		m_status = false;
-	}
-	else {
-		return false;
-	}
-	return true;
-}
-
-void MemBool::set_status(bool status) {
-	m_lock.lock();
-	m_status = status;
-	m_lock.unlock();
-}
-
-bool MemBool::get_status() {
-	return m_status;
-}
-
-string MemBool::get_data() {
-	if (m_status)
-		return "y";
-	return "n";
-}
-
-bool MemString::set_data(const string& data) {
-	m_lock.lock();
-	m_string = data;
-	m_lock.unlock();
-	return true;
-}
-
-void MemString::set_string(const string& str) {
-	set_data(str);
-}
-
-string& MemString::get_string() {
-	return m_string;
-}
-
 //string& Port::get_name() {
 //	return m_name;
 //}
@@ -123,20 +43,7 @@ void Module::processing_loop() {
 	m_clock.start();
 
 	while (true) {
-		//{
-		//	unique_lock<mutex> lock(m_lock);
-		//	if (m_bwait) {
-		//		m_run.wait(lock, [this] {return true; });
-		//	}
-		//}
 
-		//{
-		//	unique_lock<mutex> lock(m_lock);
-		//	m_bfinish = process();
-		//	if (m_bfinish) {
-		//		break;
-		//	}
-		//}
 		{
 			unique_lock<mutex> lock(m_lock);
 			if (!(process() && m_brun))
@@ -154,20 +61,20 @@ void Module::stop() {
 	m_brun = false;
 }
 
-void Module::register_port(const string& name, const string& disc,
-	bool status, MemBool** mem) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->mem_type = MT_BOOL;
-	port->mem = (Memory**)mem;
-	
-	MemBool* tmp = new MemBool();
-	tmp->set_status(status);
-	*port->mem = tmp;
+//void Module::register_port(const string& name, const string& disc,
+//	bool status, MemBool** mem) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->mem = (Memory**)mem;
+//	
+//	MemBool* tmp = new MemBool();
+//	tmp->set_status(status);
+//	*port->mem = tmp;
+//
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//}
 
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
 
 //void Module::register_port(const string& name, const string& disc,
 //	const string& value, MEM_TYPE mem_type, Memory** mem) {
@@ -180,51 +87,96 @@ void Module::register_port(const string& name, const string& disc,
 //	set_data_to_port(port->name, value);
 //}
 
-void Module::register_port(const string& name, const string& disc,
-	int value, MemInt** mem) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->mem_type = MEM_TYPE::MT_INT;
-	port->mem = (Memory**)(mem);
-	MemInt* tmp = new MemInt();
-	tmp->set_value(value);
-	*port->mem = tmp;
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_port(const string& name, const string& disc,
-	const string& str, MemString** mem) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->mem_type = MEM_TYPE::MT_STRING;
-	port->mem = (Memory**)(mem);
-	MemString* tmp = new MemString();
-	tmp->set_string(str);
-	*port->mem = tmp;
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
+//void Module::register_port(const string& name, const string& disc,
+//	int value, MemInt** mem) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->mem = (Memory**)(mem);
+//	MemInt* tmp = new MemInt();
+//	tmp->set_value(value);
+//	*port->mem = tmp;
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//}
+//
+//void Module::register_port(const string& name, const string& disc,
+//	const string& str, MemString** mem) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->mem = (Memory**)(mem);
+//	MemString* tmp = new MemString();
+//	tmp->set_string(str);
+//	*port->mem = tmp;
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//}
 
 void Module::register_port(const string& name, const  string& disc,
 	bool init_status, bool* status) {
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
-	
+	port->type = Port::TYPE::BOOL;
+
 	*status = init_status;
 	port->pdata.b = status;
 	
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
 
+void Module::register_port(const string& name, const string& disc,
+	int init_val, int* val) {
+	Port* port = new Port;
+	port->name = name;
+	port->disc = disc;
+	port->type = Port::TYPE::INT;
+
+	*val = init_val;
+	port->pdata.i = val;
+
+	m_ports.insert(pair<const string, Port*>(port->name, port));
+}
+
+void Module::register_port(const string& name, const string& disc,
+	double init_val, double* val) {
+	Port* port = new Port;
+	port->name = name;
+	port->disc = disc;
+	port->type = Port::TYPE::DOUBLE;
+
+	*val = init_val;
+	port->pdata.d = val;
+
+	m_ports.insert(pair<const string, Port*>(port->name, port));
+}
+
+void Module::register_port(const string& name, const string& disc,
+	string init_str, string* str) {
+	Port* port = new Port;
+	port->name = name;
+	port->disc = disc;
+	port->type = Port::TYPE::STRING;
+
+	*str = init_str;
+	port->pdata.s = str;
+
+	m_ports.insert(pair<const string, Port*>(port->name, port));
+}
+
+void Module::register_port(const string& name, const string& disc, Memory** mem) {
+	Port* port = new Port;
+	port->name = name;
+	port->disc = disc;
+	port->mem = mem;
+	port->type = Port::TYPE::MEMORY;
+	m_ports.insert(pair<const string, Port*>(port->name, port));
+}
+
+
 //Port* Module::get_port(const string& name) {
 //	return m_ports[name];
 //}
 
-//const PortMap* Module::get_ports() {
-//	return &m_ports;
-//}
 bool Module::connect_port(const string& port_name, const string& mem_name) {
 	PortMap::iterator pm_it  = m_ports.find(port_name);
 	if (pm_it == m_ports.end())
@@ -236,27 +188,33 @@ bool Module::connect_port(const string& port_name, const string& mem_name) {
 		return false;
 	Memory* mem = mm_it->second;
 
-	switch (port->mem_type) {
-	case MT_INT:
-		if (MT_INT != mem->get_type())
-			return false;
-		*port->mem = mem;
-		return true;
-	default:
-		return false;
-	}
+	port->mem = &mem;
 }
 
 bool Module::set_data(const string& name, const string& data) {
+	unique_lock<mutex> lock(m_lock);
+
 	PortMap::iterator pm_it = m_ports.find(name);
 	if (pm_it == m_ports.end())
 		return false;
 
 	Port* port = pm_it->second;
-	switch (port->pt) {
+	switch (port->type) {
 	case Port::TYPE::BOOL:
 		return str_to_bool(data, *(port->pdata.b));
+	case Port::TYPE::INT:
+		(*port->pdata.i) = stoi(data);
+		return true;
+	case Port::TYPE::DOUBLE:
+		(*port->pdata.d) = stod(data);
+		return true;
+	case Port::TYPE::STRING:
+		(*port->pdata.s) = data;
+		return true;
+	default:
+		return false;
 	}
+
 	//PortMap::iterator pm_it = m_ports.find(name);
 	//if (pm_it == m_ports.end())
 	//	return false;
@@ -276,7 +234,6 @@ bool Module::set_data(const string& name, const string& data) {
 	//default:
 	//	return false;
 	//}
-
 	//if (!mem->set_data(value)) {
 	//	delete mem;
 	//	return false;
@@ -286,16 +243,34 @@ bool Module::set_data(const string& name, const string& data) {
 }
 
 bool Module::get_data(const string& name, string& data) {
+	unique_lock<mutex> lock(m_lock);
+
 	PortMap::iterator pm_it = m_ports.find(name);
 	if (pm_it == m_ports.end())
 		return false;
 
-	Memory* mem = *(pm_it->second->mem);
-	data = mem->get_data();
-	return true;
+	Port* port = pm_it->second;
+	switch (port->type) {
+	case Port::TYPE::BOOL:
+		data = bool_to_str((*port->pdata.b));
+		return true;
+	case Port::TYPE::INT:
+		data = to_string((*port->pdata.i));
+		return true;
+	case Port::TYPE::DOUBLE:
+		data = to_string((*port->pdata.d));
+		return true;
+	case Port::TYPE::STRING:
+		data = (*port->pdata.s);
+		return true;
+	default:
+		return false;
+	}
 }
 
 void Module::get_port_names_and_discs(vector<pair<string, string> >& names_and_discs) {
+	unique_lock<mutex> lock(m_lock);
+
 	names_and_discs.reserve(m_ports.size());
 
 	for each(pair<string, Port*> port in m_ports){

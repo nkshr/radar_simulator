@@ -38,18 +38,18 @@ set(MODULE_HPP_FILES
 	#src/module/simulator.hpp
 )
 
-set(SIGNAL_CPP_FILES
-	src/signal/signal.cpp
+set(MEMORY_CPP_FILES
+	src/memory/memory.cpp
 )
 
-set(SIGNAL_HPP_FILES
-	src/signal/signal.hpp
+set(MEMORY_HPP_FILES
+	src/memory/memory.hpp
 )
 
 set(CPP_FILES
 	${COMMON_CPP_FILES}
 	${MODULE_CPP_FILES}
-	${SIGNAL_CPP_FILES}
+	${MEMORY_CPP_FILES}
 	src/command.cpp
 	src/board.cpp
 )
@@ -57,7 +57,7 @@ set(CPP_FILES
 set(HPP_FILES
 	${COMMON_HPP_FILES}
 	${MODULE_HPP_FILES}
-	${SIGNAL_HPP_FILES}
+	${MEMORY_HPP_FILES}
 	src/command.hpp
 	src/board.hpp
 )

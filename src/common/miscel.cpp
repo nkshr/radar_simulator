@@ -204,14 +204,14 @@ string bool_to_str(bool status) {
 }
 
 bool str_to_bool(const string& str, bool& status) {
-	if (str == "y" && str == "yes") {
+	if (str == "y" || str == "yes") {
 		status = true;
 	}
-	else if (str == "n" && str == "no") {
+	else if (str == "n" || str == "no") {
 		status = false;
 	}
 	else {
-		return true;
+		return false;
 	}
 
 	return true;

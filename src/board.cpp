@@ -355,6 +355,7 @@ bool Board::cmd_set(vector<string>& args, string &msg) {
 		msg = "Couldn't set " + data + " to " + port + " in " + module + ".";
 		return false;
 	}
+	msg = data + " -> " + port;
 	return true;
 }
 

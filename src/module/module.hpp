@@ -5,77 +5,16 @@
 #include <queue>
 #include <condition_variable>
 
+#include "../common/miscel.hpp"
+#include "../memory/memory.hpp"
+#include "../board.hpp"
+
 using std::thread;
 using std::string;
 using std::queue;
 using std::condition_variable;
 using std::unique_lock;
 using std::pair;
-//#include "../common/clock.hpp"
-#include "../common/miscel.hpp"
-
-#include "../board.hpp"
-
-enum MEM_TYPE {
-	MT_BOOL,
-	MT_INT,
-	MT_FLOAT,
-	MT_DOUBLE,
-	MT_STRING,
-
-};
-
-class Memory {
-public:
-	virtual bool set_data(const string& value) = 0;
-	//virtual void write(char* buf, int buf_size);
-	//virtual bool read(const char* buf, int buf_size);
-	virtual string get_data();
-
-	bool is_rom() const;
-	MEM_TYPE get_type() const;
-	void enable_rom(bool rom);
-
-protected:
-	mutex m_lock;
-
-private:
-	string m_name;
-	bool m_brom;
-	MEM_TYPE m_mem_type;
-	
-};
-
-class MemInt : public Memory{
-public:
-	//MemInt(int vlaue);
-	virtual bool set_data(const string& value);
-	void set_value(int value);
-
-	int get_value();
-private:
-	int m_value;
-};
-
-class MemBool : public Memory {
-public:
-	virtual bool set_data(const string& value);
-	virtual string get_data();
-
-	void set_status(bool status);
-	bool get_status();
-private:
-	bool m_status;
-};
-
-class MemString : public Memory {
-public:
-	virtual bool set_data(const string& value); 
-	void set_string(const string& str);
-	string& get_string();
-private:
-	string m_string;
-};
 
 struct LatLon {
 	double deg;
@@ -101,14 +40,13 @@ struct Port {
 		INT,
 		DOUBLE,
 		STRING,
-		MEM,
+		MEMORY,
 		TYPE_END
 	};
 
 	string name;
 	string disc;
 	//MemPtr mem;
-	MEM_TYPE mem_type;
 	Memory** mem;
 	union Ptr {
 		bool* b;
@@ -116,7 +54,8 @@ struct Port {
 		double* d;
 		string* s;
 	}pdata;
-	Port::TYPE pt;
+
+	Port::TYPE type;
 };
 
 struct SignalPort : public Port {
@@ -124,7 +63,6 @@ struct SignalPort : public Port {
 };
 
 typedef map<const string, Port*> PortMap;
-typedef map<const string, Memory*> MemMap;
 
 class Module {
 public:
@@ -173,14 +111,22 @@ protected:
 	MemMap m_mems;
 	//void register_port(const string& name, const string& disc,
 	//	const string& data, MEM_TYPE mem_type, Memory** mem);
-	void register_port(const string& name, const string& disc,
-		bool status, MemBool** mem);
-	void register_port(const string& name, const string& disc,
-		int value, MemInt** mem);
-	void register_port(const string& name, const string& disc,
-		const string& str, MemString** mem);
+	//void register_port(const string& name, const string& disc,
+	//	bool status, MemBool** mem);
+	//void register_port(const string& name, const string& disc,
+	//	int value, MemInt** mem);
+	//void register_port(const string& name, const string& disc,
+	//	const string& str, MemString** mem);
 	void register_port(const string& name, const string& disc,
 		bool init_status, bool* status);
+	void register_port(const string& name, const string& disc,
+		int init_val, int* val);
+	void register_port(const string& name, const string& disc,
+		double init_val, double* val);
+	void register_port(const string& name, const string& disc,
+		string init_str, string* str);
+	void register_port(const string& name, const string& disc,
+		Memory** mem);
 private:
 	mutex m_lock;
 };
