@@ -194,3 +194,25 @@ T* create_instance() {
 //	m_lock->unlock();
 //}
 
+string bool_to_str(bool status) {
+	string str;
+	if (status)
+		str = "yes";
+	else
+		str = "no";
+	return str;
+}
+
+bool str_to_bool(const string& str, bool& status) {
+	if (str == "y" && str == "yes") {
+		status = true;
+	}
+	else if (str == "n" && str == "no") {
+		status = false;
+	}
+	else {
+		return true;
+	}
+
+	return true;
+}

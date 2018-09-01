@@ -61,12 +61,26 @@ public:
 	vector<string> get_module_names() const;
 	vector<string> get_module_types() const;
 	ModMap& get_modules();
-
-	bool get_port_names(const string& mname, vector<string>& names) const;
+	
+	mutex* get_lock();
 
 private:
-	bool m_brun;
+	enum CMD {
+		MODULE,
+		SET,
+		GET,
+		LSMOD,
+		LSPORT,
+		RUN,
+		FINISH,
+		PING,
+		CMD_END
+	};
 
+	string cmd_strs[CMD::CMD_END] = { "module", "set", "get", "lsmod", "lsport", "run", "finish", "ping"};
+
+	bool m_brun;
+	bool m_bdebug;
 	mutex m_lock;
 
 	ModMap m_modules;
@@ -89,4 +103,11 @@ private:
 	void register_cmd_proc(const string& name);
 
 	//CmdServer m_cmd_server;
+	bool cmd_module(vector<string>& args, string& msg);
+	bool cmd_set(vector<string>& args, string& msg);
+	bool cmd_get(vector<string>& args, string& msg);
+	bool cmd_lsmod(vector<string>& args, string& msg);
+	bool cmd_lsport(vector<string>& args, string& msg);
+	bool cmd_run(vector<string>& args, string& msg);
+	bool cmd_finish(vector<string>& args, string& msg);
 };

@@ -85,14 +85,15 @@ int main(int argc, char ** argv) {
 
 	if (rmsg == cmd_err_str) {
 		res = recv(myself_sock, rmsg, rmsg_size, 0);
-		
 		if (res == SOCKET_ERROR) {
 			cerr << "recv failed with error : " << WSAGetLastError() << endl;
+			closesocket(myself_sock);
+			WSACleanup();
+			return -1;
 		}
-		else {
-			cerr << rmsg << endl;
-		}
+		rmsg[res] = '\0';
 
+		cerr << rmsg << endl;
 		closesocket(myself_sock);
 		WSACleanup();
 		return -1;
@@ -105,8 +106,9 @@ int main(int argc, char ** argv) {
 			WSACleanup();
 			return -1;
 		}
+		rmsg[res] = '\0';
 
-		cerr << rmsg << endl;
+		cout << rmsg << endl;
 		closesocket(myself_sock);
 		WSACleanup();
 		return 0;

@@ -9,7 +9,8 @@ using std::thread;
 using std::string;
 using std::queue;
 using std::condition_variable;
-
+using std::unique_lock;
+using std::pair;
 //#include "../common/clock.hpp"
 #include "../common/miscel.hpp"
 
@@ -95,6 +96,15 @@ union MemPtr {
 
 
 struct Port {
+	enum TYPE{
+		BOOL,
+		INT,
+		DOUBLE,
+		STRING,
+		MEM,
+		TYPE_END
+	};
+
 	string name;
 	string disc;
 	//MemPtr mem;
@@ -105,7 +115,8 @@ struct Port {
 		int* i;
 		double* d;
 		string* s;
-	}value;
+	}pdata;
+	Port::TYPE pt;
 };
 
 struct SignalPort : public Port {
@@ -125,19 +136,30 @@ public:
 	void stop();
 
 	virtual bool init() = 0;
+	virtual bool finish() {
+		return true;
+	};
 	virtual bool process() = 0;
-
 	//Port* get_port(const string& name);
 
 	bool connect_port(const string& port_name, const string& mem_name);
+
 	bool set_data(const string& name, const string& data);
 	bool get_data(const string& name, string& data);
-	void get_port_names(vector<string>& names);
+
+	void get_port_names_and_discs(vector<pair<string, string> >& names_and_discs);
+
+	//Port* get_port(const string& name);
+
+	//const PortMap* get_ports();
+
+	void lock();
+	void unlock();
 
 protected:
 	bool m_brun;
 	bool m_bwait;
-
+	bool m_bfinish;
 	thread m_th;
 
 	condition_variable m_run;
@@ -159,12 +181,6 @@ protected:
 		const string& str, MemString** mem);
 	void register_port(const string& name, const string& disc,
 		bool init_status, bool* status);
-
-	Port* get_port(const string& name);
-
-	void lock();
-	void unlock();
-
 private:
 	mutex m_lock;
 };

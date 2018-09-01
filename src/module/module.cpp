@@ -111,6 +111,7 @@ Module::Module() : m_brun(false) {
 }
 
 void Module::run() {
+	m_brun = true;
 	m_th = thread(&Module::processing_loop, this);
 }
 
@@ -122,19 +123,30 @@ void Module::processing_loop() {
 	m_clock.start();
 
 	while (true) {
+		//{
+		//	unique_lock<mutex> lock(m_lock);
+		//	if (m_bwait) {
+		//		m_run.wait(lock, [this] {return true; });
+		//	}
+		//}
+
+		//{
+		//	unique_lock<mutex> lock(m_lock);
+		//	m_bfinish = process();
+		//	if (m_bfinish) {
+		//		break;
+		//	}
+		//}
 		{
 			unique_lock<mutex> lock(m_lock);
-			if (!m_brun) {
+			if (!(process() && m_brun))
 				break;
-			}
-		}
-
-		if (!process()) {
-			break;
 		}
 
 		m_clock.adjust();
 	}
+
+	m_clock.stop();
 }
 
 void Module::stop() {
@@ -199,14 +211,20 @@ void Module::register_port(const string& name, const  string& disc,
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
-	port->value.b = status;
+	
+	*status = init_status;
+	port->pdata.b = status;
+	
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
 
-Port* Module::get_port(const string& name) {
-	return m_ports[name];
-}
+//Port* Module::get_port(const string& name) {
+//	return m_ports[name];
+//}
 
+//const PortMap* Module::get_ports() {
+//	return &m_ports;
+//}
 bool Module::connect_port(const string& port_name, const string& mem_name) {
 	PortMap::iterator pm_it  = m_ports.find(port_name);
 	if (pm_it == m_ports.end())
@@ -229,33 +247,42 @@ bool Module::connect_port(const string& port_name, const string& mem_name) {
 	}
 }
 
-bool Module::set_data(const string& name, const string& value) {
+bool Module::set_data(const string& name, const string& data) {
 	PortMap::iterator pm_it = m_ports.find(name);
 	if (pm_it == m_ports.end())
 		return false;
-	Memory*& mem = *(pm_it->second->mem);
 
-	if (mem != nullptr && mem->is_rom()) {
-		delete mem;
+	Port* port = pm_it->second;
+	switch (port->pt) {
+	case Port::TYPE::BOOL:
+		return str_to_bool(data, *(port->pdata.b));
 	}
+	//PortMap::iterator pm_it = m_ports.find(name);
+	//if (pm_it == m_ports.end())
+	//	return false;
+	//Memory*& mem = *(pm_it->second->mem);
 
-	switch (pm_it->second->mem_type) {
-	case MT_INT:
-		mem = (Memory*)(new MemInt());
-		break;
-	case MT_BOOL:
-		mem = (Memory*)(new MemBool());
-		break;
-	default:
-		return false;
-	}
+	//if (mem != nullptr && mem->is_rom()) {
+	//	delete mem;
+	//}
 
-	if (!mem->set_data(value)) {
-		delete mem;
-		return false;
-	}
-	mem->enable_rom(true);
-	return true;
+	//switch (pm_it->second->mem_type) {
+	//case MT_INT:
+	//	mem = (Memory*)(new MemInt());
+	//	break;
+	//case MT_BOOL:
+	//	mem = (Memory*)(new MemBool());
+	//	break;
+	//default:
+	//	return false;
+	//}
+
+	//if (!mem->set_data(value)) {
+	//	delete mem;
+	//	return false;
+	//}
+	//mem->enable_rom(true);
+	//return true;
 }
 
 bool Module::get_data(const string& name, string& data) {
@@ -268,18 +295,18 @@ bool Module::get_data(const string& name, string& data) {
 	return true;
 }
 
-void Module::get_port_names(vector<string>& names) {
-	names.reserve(m_ports.size());
+void Module::get_port_names_and_discs(vector<pair<string, string> >& names_and_discs) {
+	names_and_discs.reserve(m_ports.size());
 
 	for each(pair<string, Port*> port in m_ports){
-		names.push_back(port.second->name);
+		names_and_discs.push_back(pair<string, string>(port.second->name, port.second->disc));
 	}
 }
 
 void Module::lock() {
-	//m_lock.lock();
+	m_lock.lock();
 }
 
 void Module::unlock() {
-	//m_lock.unlock();
+	m_lock.unlock();
 }

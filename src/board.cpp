@@ -25,7 +25,7 @@ using std::string;
 using std::pair;
 
 
-Board::Board() {
+Board::Board() :m_brun(true), m_bdebug(true) {
 	memset(&m_myself, 0, sizeof(m_myself));
 	m_myself.sin_family = AF_INET;
 	m_myself.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -99,54 +99,81 @@ void Board::run() {
 			cerr << "recv failed with error : " << WSAGetLastError() << endl;
 			break;
 		}
+
 		cout << recv_msg << " received." << endl;
 
 		vector<string> toks;
 		split(recv_msg, " \n", toks);
 
-		string& cmd = toks[0];
+
+		string cmd_str;
+		if (toks.size() != 0) {
+			cmd_str = toks[0];
+		}
+		else {
+			cmd_str = "";
+		}
+
+		CMD cmd;
+		for (int i = 0; i < CMD_END; ++i) {
+			if (cmd_str == cmd_strs[i]) {
+				cmd = static_cast<Board::CMD>(i);
+			}
+		}
 
 		vector<string> args;
 		if (toks.size() > 1) {
 			args.assign(toks.begin() + 1, toks.end());
 		}
 
-		CmdProcMap::iterator cpm_it = m_cmd_procs.find(cmd);
-		if (cpm_it == m_cmd_procs.end()) {
-			res = send(target_sock, cmd_err_str.c_str(), cmd_err_str.size(), 0);
-			if (res != cmd_err_str.size()) {
-				cerr << "send failed with error : " << WSAGetLastError() << endl;
-				break;
-			}
+		string msg;
+		bool cmd_suc = false;
+		switch (cmd) {
+		case Board::CMD::MODULE:
+			cmd_suc = cmd_module(args, msg);
+			break;
+		case Board::CMD::SET:
+			cmd_suc = cmd_set(args, msg);
+			break;
+		case Board::CMD::GET:
+			cmd_suc = cmd_get(args, msg);
+			break;
+		case Board::CMD::LSMOD:
+			cmd_suc = cmd_lsmod(args, msg);
+			break;
+		case Board::CMD::LSPORT:
+			cmd_suc = cmd_lsport(args, msg);
+			break;
+		case Board::CMD::RUN:
+			cmd_suc = cmd_run(args, msg);
+			break;
+		case Board::CMD::FINISH:
+			cmd_suc = cmd_finish(args, msg);
+			break;
+		case Board::CMD::PING:
+			break;
+		default:
+			cmd_suc = false;
+			 msg = "Invalid command " +  cmd_str + " received.";
+			break;
+		}
 
-			string msg = "Invalid command " +  cmd + " received.";
-			res = send(target_sock, msg.c_str(), msg.size(), 0);
-			if (res != msg.size()) {
-				cerr << "send failed with error : " << WSAGetLastError() << endl;
-				break;
-			}
-
+		if (cmd_suc) {
+			res = send(target_sock, cmd_suc_str.c_str(), cmd_suc_str.size(), 0);
 		}
 		else {
-			CmdProcess* cmd_process = cpm_it->second;
-			if (cmd_process->process(args)) {
-				res = send(target_sock, cmd_suc_str.c_str(), cmd_suc_str.size(), 0);
-			}
-			else {
-				res = send(target_sock, cmd_err_str.c_str(), cmd_err_str.size(), 0);
-			}
-
-			if (res != cmd_suc_str.size()) {
-				cerr << "send failed with error : " << WSAGetLastError() << endl;
-				break;
-			}
-
-			const string& msg = cmd_process->get_msg();
-			res = res = send(target_sock, msg.c_str(), msg.size(), 0);
-			if (res != msg.size()) {
-				cerr << "send failed with error : " << WSAGetLastError() << endl;
-			}
+			res = send(target_sock, cmd_err_str.c_str(), cmd_err_str.size(), 0);
 		}
+
+		if (res != cmd_suc_str.size()) {
+			cerr << "send failed with error : " << WSAGetLastError() << endl;
+		}
+
+		res = send(target_sock, msg.c_str(), msg.size(), 0);
+		if (res != msg.size()) {
+			cerr << "send failed with error : " << WSAGetLastError() << endl;
+		}
+
 		closesocket(target_sock);
 	}
 
@@ -219,6 +246,10 @@ bool Board::get_data(const string& mname, const string& pname, string& data) {
 	return module->get_data(pname, data);
 }
 
+mutex* Board::get_lock() {
+	return &m_lock;
+}
+
 bool Board::create_module(const string& type, const string& name) {
 	for (ModCreatorMap::iterator it = m_mcreators.begin(); it != m_mcreators.end(); ++it) {
 		if (it->first == type) {
@@ -273,17 +304,179 @@ ModMap& Board::get_modules(){
 	return m_modules;
 }
 
-bool Board::get_port_names(const string& mname, vector<string>& names) const {
-	ModMap::const_iterator mm_it = m_modules.find(mname);
-	if (mm_it == m_modules.end()) {
-		return false;
-	}
-	mm_it->second->get_port_names(names);
-	return true;
-}
-
 template <typename T>
 void Board::register_cmd_proc(const string& name) {
 	CmdProcess* cmd_proc = dynamic_cast<CmdProcess*>(new T(this));
 	m_cmd_procs.insert(pair<string, CmdProcess*>(name, cmd_proc));
+}
+
+bool Board::cmd_module(vector<string>& args, string &msg) {
+	if (args.size() < 2) {
+		msg = "Too few arguments.\n";
+		msg += "module <type> <name0> <name1>...";
+		return false;
+	}
+
+	if (args[0] == "--help") {
+		for (ModCreatorMap::iterator it = m_mcreators.begin(); it != m_mcreators.end(); ++it) {
+			msg += it->first + '\n';
+		}
+		msg[msg.size() - 1] = '\0';
+		return true;
+	}
+
+	string& type = args[0];
+	string& name = args[1];
+	if (!create_module(type, name)) {
+		msg = "Couldn't create module " + type + " " + name + ".";
+		return false;
+	}
+
+	for (int i = 0; i < args.size() - 1; ++i) {
+		msg = type + " " + args[i + 1] + " created.";
+		if (i != args.size() - 2) {
+			msg += "\n";
+		}
+	}
+	return true;
+}
+
+bool Board::cmd_set(vector<string>& args, string &msg) {
+	if (args.size() != 3) {
+		msg = "Too few argument\n";
+		msg += "set <module> <port> <data>";
+		return false;
+	}
+
+	string& module = args[0];
+	string& port = args[1];
+	string& data = args[2];
+	if (!set_data(module, port, data)) {
+		msg = "Couldn't set " + data + " to " + port + " in " + module + ".";
+		return false;
+	}
+	return true;
+}
+
+bool Board::cmd_get(vector<string>& args, string &msg) {
+	msg = "";
+
+	if (args.size() != 2) {
+		msg = "Too few argument\n";
+		msg += "get <module> <port>";
+		return false;
+	}
+
+	string& module = args[0];
+	string& port = args[1];
+	if (!get_data(module, port, msg)) {
+		msg = "Couldn't find " + port + " in " + module + ".";
+		return false;
+	}
+
+	msg += '\0';
+	return true;
+}
+
+bool Board::cmd_lsmod(vector<string>& args, string& msg) {
+	msg = "";
+	vector<string> names = get_module_names();
+
+	if (names.size() == 0) {
+		return true;
+	}
+
+	msg = "";
+	for (int i = 0; i < names.size(); ++i) {
+		msg += names[i] + '\n';
+	}
+	msg[msg.size() - 1] = '\0';
+	return true;
+}
+
+bool Board::cmd_lsport(vector<string>& args, string&msg) {
+	msg = "";
+	if (args.size() != 1) {
+		msg = "Too few arguments.\n";
+		msg += "rsim lsport <module>";
+		return false;
+	}
+
+	string& mname = args[0];
+	ModMap::const_iterator mm_it = m_modules.find(mname);
+	if (mm_it == m_modules.end()) {
+		msg = "Couldn't find " + mname + ".";
+		return false;
+	}
+
+	vector<pair<string, string>> names_and_discs;
+	mm_it->second->get_port_names_and_discs(names_and_discs);
+
+	for (int i = 0; i < names_and_discs.size(); ++i) {
+		string& name =  names_and_discs[i].first;
+		string& discs = names_and_discs[i].second;
+		msg += name + " : " + discs + "\n";
+	}
+	if(msg.size())
+		msg[msg.size() - 1] = '\0';
+	return true;
+}
+
+bool Board::cmd_run(vector<string>& args, string& msg) {
+	if (!args.size()) {
+		msg = "";
+
+		for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
+			const string &name = it->first;
+			Module *module = it->second;
+			module->run();
+			msg += name + " is  runninng.";
+			if (it != --m_modules.end()) {
+				msg += "\n";
+			}
+		}
+		return true;
+	}
+	return false;
+
+}
+
+bool Board::cmd_finish(vector<string>& args, string& msg) {
+	if (!args.size()) {
+		msg = "";
+
+		for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
+			const string &name = it->first;
+			Module *module = it->second;
+			module->lock();
+			module->stop();
+			module->unlock();
+		}
+
+		for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
+			const string &name = it->first;
+			Module *module = it->second;
+			module->join();
+		}
+
+		for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
+			const string &name = it->first;
+			Module *module = it->second;
+			if (!module->finish()) {
+				msg += name + " finished abnormally.";
+			}
+			else {
+				msg += name + " fineshed.";
+			}
+
+			if (it != --m_modules.end()) {
+				msg += "\n";
+			}
+
+		}
+
+		return true;
+	}
+	return false;
+
 }

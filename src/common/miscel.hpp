@@ -121,6 +121,7 @@ private:
 template <typename T>
 T* create_instance();
 
+string bool_to_str(bool status);
 //class Mutex {
 //public:
 //	Mutex(mutex* lock);
@@ -128,3 +129,5 @@ T* create_instance();
 //private:
 //	mutex* m_lock;
 //};
+
+bool str_to_bool(const string& str, bool& status);
