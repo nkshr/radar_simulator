@@ -15,7 +15,6 @@ using std::mutex;
 
 class Board;
 class Module;
-class CmdProcess;
 
 void foo(const char*s);
 
@@ -27,10 +26,161 @@ typedef Memory* (Board::*MemCreator)();
 typedef map<const string, Memory*> MemMap;
 typedef map<const string, MemCreator> MemCreatorMap;
 
-typedef map<const string, CmdProcess*> CmdProcMap;
-
 
 class Board {
+private:
+	enum CMD {
+		MODULE,
+		SET,
+		GET,
+		LSMOD,
+		LSPORT,
+		RUN,
+		FINISH,
+		PING,
+		MEMORY,
+		CMD_END,
+	};
+
+	struct Cmd {
+		string cmd_str;
+		string synopsis;
+		string help;
+	};
+
+	string cmd_strs[CMD::CMD_END] = { "module", "set", "get", "lsmod", "lsport", "run", "finish", "ping", "memory" };
+	string cmd_helps[CMD::CMD_END];
+
+	bool m_brun;
+	bool m_bdebug;
+	mutex m_lock;
+
+	ModMap m_modules;
+
+	ModCreatorMap m_mod_creators;
+
+	MemMap m_memories;
+
+	MemCreatorMap m_mem_creators;
+
+	sockaddr_in m_myself;
+
+	SOCKET m_myself_sock;
+
+	template<typename T>
+	Module* create_module();
+
+	template<typename T>
+	Memory* create_memory();
+
+	template<typename T>
+	void register_module(const string& type);
+
+	template<typename T>
+	void register_memory(const string& type);
+
+	template<typename T>
+	void register_cmd_proc(const string& name);
+
+	//member for command process
+	struct CmdProcess {
+		CmdProcess(Board* board);
+
+		virtual bool process(vector<string> args) = 0;
+
+		Board* board;
+
+		string msg;
+
+		string help;
+	};
+
+	typedef map<const string, CmdProcess*> CmdProcMap;
+
+	struct CmdModule : public CmdProcess {
+		CmdModule(Board* board) : CmdProcess(board) {
+			help = "module <type> <name0> <name1>...\n";
+			help += "Create named modules as the type specified by <type>.";
+			for (ModCreatorMap::iterator it = board->m_mod_creators.begin(); it != board->m_mod_creators.end(); ++it) {
+				help += it->first + '\n';
+			}
+			help[help.size() - 1] = '\0';
+		};
+
+		virtual bool process(vector<string> args);
+	};
+
+	struct CmdSet : public CmdProcess {
+		CmdSet(Board* board) : CmdProcess(board) {
+		};
+		virtual bool process(vector<string> args);
+	};
+
+	struct CmdGet : public CmdProcess {
+		CmdGet(Board* board) : CmdProcess(board) {
+		};
+		virtual bool process(vector<string> args);
+	};
+
+	struct CmdLsMod : public CmdProcess {
+		CmdLsMod(Board* board) : CmdProcess(board) {
+		};
+		virtual bool process(vector<string> args);
+	};
+
+	struct CmdLsPort : public CmdProcess {
+		CmdLsPort(Board* board) : CmdProcess(board) {
+		};
+		virtual bool process(vector<string> args);
+	};
+
+	struct CmdRun : public CmdProcess {
+		CmdRun(Board* board) : CmdProcess(board) {
+		};
+		virtual bool process(vector<string> args);
+	};
+
+	struct CmdFinish : public CmdProcess {
+		CmdFinish(Board* board) : CmdProcess(board) {
+		};
+		virtual bool process(vector<string> args);
+	};
+
+	struct CmdShutdown : public CmdProcess {
+		CmdShutdown(Board* board) : CmdProcess(board) {
+		};
+		virtual bool process(vector<string> args);
+	};
+
+	struct CmdPing : public CmdProcess {
+		CmdPing(Board* board) : CmdProcess(board) {
+		};
+		virtual bool process(vector<string> args);
+	};
+
+	struct CmdMemory : public CmdProcess {
+		CmdMemory(Board* board) : CmdProcess(board) {
+		};
+		virtual bool process(vector<string> args);
+	};
+
+	struct CmdLsMem : public CmdProcess {
+		CmdLsMem(Board* board) : CmdProcess(board) {
+			help = "ls <target>\n";
+			help += "list arbitrary object.";
+		};
+		virtual bool process(vector<string> args);
+	};
+
+	struct CmdConnect : public CmdProcess {
+		CmdConnect(Board* board) : CmdProcess(board) {
+		}
+		virtual bool process(vector<string> args);
+	};
+
+	CmdProcMap m_cmd_procs;
+
+
 public:
 	Board();
 
@@ -71,67 +221,4 @@ public:
 	ModMap& get_modules();
 	
 	mutex* get_lock();
-
-private:
-	enum CMD {
-		MODULE,
-		SET,
-		GET,
-		LSMOD,
-		LSPORT,
-		RUN,
-		FINISH,
-		PING, 
-		MEMORY,
-		CMD_END,
-	};
-
-	struct Cmd {
-		string cmd_str;
-		string synopsis;
-		string help;
-	};
-
-	string cmd_strs[CMD::CMD_END] = { "module", "set", "get", "lsmod", "lsport", "run", "finish", "ping", "memory"};
-	string cmd_helps[CMD::CMD_END];
-
-	bool m_brun;
-	bool m_bdebug;
-	mutex m_lock;
-
-	ModMap m_modules;
-
-	ModCreatorMap m_mod_creators;
-
-	MemMap m_memories;
-
-	MemCreatorMap m_mem_creators;
-
-	CmdProcMap m_cmd_procs;
-
-	sockaddr_in m_myself;
-
-	SOCKET m_myself_sock;
-
-	template<typename T>
-	Module* create_module();
-
-	template<typename T>
-	Memory* create_memory();
-
-	template<typename T>
-	void register_module(const string& type);
-
-	template<typename T>
-	void register_cmd_proc(const string& name);
-
-	//CmdServer m_cmd_server;
-	bool cmd_module(vector<string>& args, string& msg);
-	bool cmd_set(vector<string>& args, string& msg);
-	bool cmd_get(vector<string>& args, string& msg);
-	bool cmd_lsmod(vector<string>& args, string& msg);
-	bool cmd_lsport(vector<string>& args, string& msg);
-	bool cmd_run(vector<string>& args, string& msg);
-	bool cmd_finish(vector<string>& args, string& msg);
-	bool cmd_memory(vector<string>& args, string& msg);
 };

@@ -1,173 +1,238 @@
 #include "module/module.hpp"
 
-#include "command.hpp"
+#include "board.hpp"
 
-CmdProcess::CmdProcess(Board* board) : m_board(board) {
+Board::CmdProcess::CmdProcess(Board* board) : board(board) {
 
 }
 
-const string& CmdProcess::get_msg() const {
-	return m_msg;
-}
-
-const string& CmdProcess::get_name() const {
-	return m_name;
-}
-
-CmdModule::CmdModule(Board* board) : CmdProcess(board) {
-}
-bool CmdModule::process(vector<string> args) {
+bool Board::CmdModule::process(vector<string> args) {
 	if (args.size() < 2) {
-		m_msg = "Too few arguments.\n";
-		m_msg += "module <type> <name0> <name1>...";
+		msg = "Too few arguments.\n";
+		msg += "module <type> <name0> <name1>...\n";
 		return false;
 	}
 
 	if (args[0] == "--help") {
-		vector<string> types = m_board->get_module_types();
-
-		m_msg = "";
-		for (int i = 0; i < types.size(); ++i) {
-			m_msg += types[i] + '\n';
-		}
-		m_msg[m_msg.size() - 1] = '\0';
+		msg = help;
 		return true;
 	}
 
 	string& type = args[0];
 	string& name = args[1];
-	if (!m_board->create_module(type, name)) {
-		m_msg = "Couldn't create module " + type + " " + name + ".";
+	if (!board->create_module(type, name)) {
+		msg = "Couldn't create module " + type + " " + name + ".";
 		return false;
 	}
 
 	for (int i = 0; i < args.size() - 1; ++i) {
-		m_msg = type + " " + args[i + 1] + " created.";
+		msg = type + " " + args[i + 1] + " created.";
 		if (i != args.size() - 2) {
-			m_msg += "\n";
+			msg += "\n";
 		}
 	}
 	return true;
+
 }
 
-bool CmdSet::process(vector<string> args) {
+bool Board::CmdSet::process(vector<string> args) {
 	if (args.size() != 3) {
-		m_msg = "Too few argument\n";
-		m_msg += "set <module> <port> <data>";
+		msg = "Too few argument\n";
+		msg += "set <module> <port> <data>";
 		return false;
 	}
 
 	string& module = args[0];
 	string& port = args[1];
 	string& data = args[2];
-	if (!m_board->set_data(module, port, data)) {
-		m_msg = "Couldn't set " + data + " to " + port + " of " + module + ".";
+	if (!board->set_data(module, port, data)) {
+		msg = "Couldn't set " + data + " to " + port + " in " + module + ".";
 		return false;
 	}
+	msg = data + " -> " + port;
 	return true;
 }
 
-bool CmdGet::process(vector<string> args) {
+bool Board::CmdGet::process(vector<string> args) {
+	msg = "";
+
 	if (args.size() != 2) {
-		m_msg = "Too few argument\n";
-		m_msg += "get <module> <port>";
+		msg = "Too few argument\n";
+		msg += "get <module> <port>";
 		return false;
 	}
 
 	string& module = args[0];
 	string& port = args[1];
-	if (m_board->get_data(module, port, m_msg)) {
-		m_msg = "Couldn't find " + port + " of " + module + ".";
+	if (!board->get_data(module, port, msg)) {
+		msg = "Couldn't find " + port + " in " + module + ".";
 		return false;
 	}
+
+	msg += '\0';
 	return true;
 }
 
-bool CmdLsMod::process(vector<string> args) {
-	m_msg = "";
-	vector<string> names = m_board->get_module_names();
-
-	if (names.size() == 0) {
+bool Board::CmdLsMod::process(vector<string> args) {
+	msg = "";
+	if (!board->m_modules.size()) {
 		return true;
 	}
 
-	m_msg = "";
-	for (int i = 0; i < names.size(); ++i) {
-		m_msg += names[i] + '\n';
+	for (ModMap::iterator it = board->m_modules.begin(); it != board->m_modules.end(); ++it) {
+		msg += it->first + "\n";
 	}
-	m_msg[m_msg.size() - 1] = '\0';
+
+	msg[msg.size() - 1] = '\0';
 	return true;
 }
 
-bool CmdLsPort::process(vector<string> args) {
-	m_msg = "";
+bool Board::CmdLsPort::process(vector<string> args) {
+	msg = "";
 	if (args.size() != 1) {
-		m_msg = "Too few arguments.\n";
-		m_msg += "rsim lsport <module>";
+		msg = "Too few arguments.\n";
+		msg += "rsim lsport <module>";
 		return false;
 	}
 
 	string& mname = args[0];
-	vector<string> names;
-	if (!m_board->get_port_names(mname, names)) {
-		m_msg = "Couldn't find " + mname + ".";
+	ModMap::const_iterator mm_it = board->m_modules.find(mname);
+	if (mm_it == board->m_modules.end()) {
+		msg = "Couldn't find " + mname + ".";
 		return false;
 	}
 
-	for (int i = 0; i < names.size(); ++i) {
-		m_msg += names[i] + "\n";
+	vector<pair<string, string>> names_and_discs;
+	mm_it->second->get_port_names_and_discs(names_and_discs);
+
+	for (int i = 0; i < names_and_discs.size(); ++i) {
+		string& name = names_and_discs[i].first;
+		string& discs = names_and_discs[i].second;
+		msg += name + " : " + discs + "\n";
 	}
-	m_msg[m_msg.size() - 1] = '\0';
+	if (msg.size())
+		msg[msg.size() - 1] = '\0';
 	return true;
 }
 
-bool CmdRun::process(vector<string> args) {
+bool Board::CmdRun::process(vector<string> args) {
 	if (!args.size()) {
-		m_msg = "";
+		msg = "";
 
-		ModMap modules = m_board->get_modules();
-		for (ModMap::iterator it = modules.begin(); it != modules.end(); ++it) {
+		for (ModMap::iterator it = board->m_modules.begin(); it != board->m_modules.end(); ++it) {
 			const string &name = it->first;
-			Module *module = it->second;			
+			Module *module = it->second;
 			module->run();
-			m_msg +=  name + " is  runninng.";
-			if (it != --modules.end()) {
-				m_msg += "\n";
+			msg += name + " is  runninng.";
+			if (it != --board->m_modules.end()) {
+				msg += "\n";
 			}
-
 		}
 		return true;
 	}
 	return false;
 }
 
-bool CmdFinish::process(vector<string> args) {
+bool Board::CmdFinish::process(vector<string> args) {
+	msg = "";
 	if (!args.size()) {
-		m_msg = "";
-
-		ModMap modules = m_board->get_modules();
-		for (ModMap::iterator it = modules.begin(); it != modules.end(); ++it) {
+		for (ModMap::iterator it = board->m_modules.begin(); it != board->m_modules.end(); ++it) {
 			const string &name = it->first;
-				Module *module = it->second;
+			Module *module = it->second;
+			module->lock();
+			module->stop();
+			module->unlock();
+		}
+
+		for (ModMap::iterator it = board->m_modules.begin(); it != board->m_modules.end(); ++it) {
+			const string &name = it->first;
+			Module *module = it->second;
+			module->join();
+		}
+
+		for (ModMap::iterator it = board->m_modules.begin(); it != board->m_modules.end(); ++it) {
+			const string &name = it->first;
+			Module *module = it->second;
 			if (!module->finish()) {
-				m_msg += name + " finished abormally.";
+				msg += name + " finished abnormally.";
 			}
 			else {
-				m_msg += name + " fineshed.";
+				msg += name + " fineshed.";
 			}
 
-			if (it != --modules.end()) {
-				m_msg += "\n";
+			if (it != --board->m_modules.end()) {
+				msg += "\n";
 			}
 
 		}
-
-		return true;
 	}
-	return false;
+	return true;
 }
 
-bool CmdPing::process(vector<string> args) {
-	m_msg = "rsim running";
+bool Board::CmdShutdown::process(vector<string> args) {
+	board->m_brun = false;
+	msg = "System is shutdowning.";
+	return true;
+}
+
+bool Board::CmdPing::process(vector<string> args) {
+	msg = "rsim running";
+	return true;
+}
+
+bool Board::CmdMemory::process(vector<string> args) {
+	msg = "";
+	if (args.size() < 2) {
+		msg = "Too few arguments.\n";
+		return false;
+	}
+
+	string& type = args[0];
+	string& name = args[1];
+	if (!board->create_memory(type, name)) {
+		msg = "Couldn't create module " + type + " " + name + ".";
+		return false;
+	}
+
+	for (int i = 0; i < args.size() - 1; ++i) {
+		msg = type + " " + args[i + 1] + " created.\n";
+	}
+	msg[msg.size() - 1] = '\0';
+}
+
+bool Board::CmdLsMem::process(vector<string> args) {
+	msg = "";
+	if (!board->m_memories.size()) {
+		return false;
+	}
+
+	for (MemMap::iterator it = board->m_memories.begin(); it != board->m_memories.end(); ++it) {
+		msg += it->first + '\n';
+	}
+
+	msg[msg.size() - 1] = '\0';
+	return true;
+}
+
+bool Board::CmdConnect::process(vector<string> args) {
+	msg = "";
+	if (args.size() != 3) {
+		msg = "Too few arguments.";
+		return false;
+	}
+
+	string& mod_name = args[0];
+	string& port_name = args[1];
+	string& mem_name = args[2];
+
+	ModMap::iterator it = board->m_modules.find(mod_name);
+	if (it == board->m_modules.end()) {
+		return false;
+	}
+
+	if (!it->second->connect_port(port_name, mem_name)) {
+		msg = "Couldn't connect " + port_name + " to " + mem_name + ".";
+		return false;
+	}
 	return true;
 }
