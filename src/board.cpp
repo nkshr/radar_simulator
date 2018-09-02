@@ -251,7 +251,7 @@ mutex* Board::get_lock() {
 }
 
 bool Board::create_module(const string& type, const string& name) {
-	for (ModCreatorMap::iterator it = m_mcreators.begin(); it != m_mcreators.end(); ++it) {
+	for (ModCreatorMap::iterator it = m_mod_creators.begin(); it != m_mod_creators.end(); ++it) {
 		if (it->first == type) {
 			Module* m = (this->*(it->second))();
 			m_modules.insert(pair<const string, Module*>(name, m));
@@ -266,10 +266,25 @@ Module* Board::create_module() {
 	return dynamic_cast<Module*>(new T);
 }
 
+bool Board::create_memory(const string& type, const string& name) {
+	for (MemCreatorMap::iterator it = m_mem_creators.begin(); it != m_mem_creators.end(); ++it) {
+		if (it->first == type) {
+			Memory* m = (this->*(it->second))();
+			m_memories.insert(pair<const string, Memory*>(name, m));
+			return true;
+		}
+	}
+	return false;
+}
+
+template <typename T>
+Memory* Board::create_memory() {
+	return dynamic_cast<Memory*>(new T);
+}
 
 template <typename T>
 void Board::register_module(const string& type) {
-	m_mcreators.insert(pair<const string, ModCreator>(type, &Board::create_module<T>));
+	m_mod_creators.insert(pair<const string, ModCreator>(type, &Board::create_module<T>));
 }
 
 void foo(const char* s) {}
@@ -292,9 +307,9 @@ vector<string> Board::get_module_names() const {
 
 vector<string> Board::get_module_types() const {
 	vector<string> types;
-	types.reserve(m_mcreators.size());
+	types.reserve(m_mod_creators.size());
 
-	for each(pair<string, ModCreator> mcreator in m_mcreators) {
+	for each(pair<string, ModCreator> mcreator in m_mod_creators) {
 		types.push_back(mcreator.first);
 	}
 	return types;
@@ -318,7 +333,7 @@ bool Board::cmd_module(vector<string>& args, string &msg) {
 	}
 
 	if (args[0] == "--help") {
-		for (ModCreatorMap::iterator it = m_mcreators.begin(); it != m_mcreators.end(); ++it) {
+		for (ModCreatorMap::iterator it = m_mod_creators.begin(); it != m_mod_creators.end(); ++it) {
 			msg += it->first + '\n';
 		}
 		msg[msg.size() - 1] = '\0';
@@ -443,9 +458,8 @@ bool Board::cmd_run(vector<string>& args, string& msg) {
 }
 
 bool Board::cmd_finish(vector<string>& args, string& msg) {
-	if (!args.size()) {
-		msg = "";
-
+	msg = "";
+	if (args.size()) {
 		for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
 			const string &name = it->first;
 			Module *module = it->second;
@@ -475,9 +489,19 @@ bool Board::cmd_finish(vector<string>& args, string& msg) {
 			}
 
 		}
-
-		return true;
 	}
-	return false;
+	return true;
+}
+
+bool Board::cmd_memory(vector<string>& args, string& msg) {
+	msg = "";
+
+	if (args.size()) {
+
+	}
+	else {
+		
+		return false;
+	}
 
 }

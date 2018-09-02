@@ -22,8 +22,12 @@ void foo(const char*s);
 typedef Module* (Board::*ModCreator)();
 typedef map<const string, Module*> ModMap;
 typedef map<const string, ModCreator> ModCreatorMap;
-typedef map<const string, CmdProcess*> CmdProcMap;
+
+typedef Memory* (Board::*MemCreator)();
 typedef map<const string, Memory*> MemMap;
+typedef map<const string, MemCreator> MemCreatorMap;
+
+typedef map<const string, CmdProcess*> CmdProcMap;
 
 
 class Board {
@@ -41,7 +45,8 @@ public:
 	bool get_data(const string& module, const string& port, string& data);
 
 	bool create_module(const string& type, const string& name);
-	
+	bool create_memory(const string& type, const string& name);
+
 	bool init_all();
 
 	bool run_module(const string& vname);
@@ -76,11 +81,19 @@ private:
 		LSPORT,
 		RUN,
 		FINISH,
-		PING,
-		CMD_END
+		PING, 
+		MEMORY,
+		CMD_END,
 	};
 
-	string cmd_strs[CMD::CMD_END] = { "module", "set", "get", "lsmod", "lsport", "run", "finish", "ping"};
+	struct Cmd {
+		string cmd_str;
+		string synopsis;
+		string help;
+	};
+
+	string cmd_strs[CMD::CMD_END] = { "module", "set", "get", "lsmod", "lsport", "run", "finish", "ping", "memory"};
+	string cmd_helps[CMD::CMD_END];
 
 	bool m_brun;
 	bool m_bdebug;
@@ -88,7 +101,11 @@ private:
 
 	ModMap m_modules;
 
-	ModCreatorMap m_mcreators;
+	ModCreatorMap m_mod_creators;
+
+	MemMap m_memories;
+
+	MemCreatorMap m_mem_creators;
 
 	CmdProcMap m_cmd_procs;
 
@@ -98,6 +115,9 @@ private:
 
 	template<typename T>
 	Module* create_module();
+
+	template<typename T>
+	Memory* create_memory();
 
 	template<typename T>
 	void register_module(const string& type);
@@ -113,4 +133,5 @@ private:
 	bool cmd_lsport(vector<string>& args, string& msg);
 	bool cmd_run(vector<string>& args, string& msg);
 	bool cmd_finish(vector<string>& args, string& msg);
+	bool cmd_memory(vector<string>& args, string& msg);
 };

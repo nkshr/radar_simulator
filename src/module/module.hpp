@@ -68,16 +68,21 @@ class Module {
 public:
 
 	Module();
+	virtual ~Module() {};
 	void run();
 	void join();
 	void processing_loop();
 	void stop();
 
-	virtual bool init() = 0;
-	virtual bool finish() {
+	virtual bool init() { 
+		return true; 
+	};
+	virtual bool process() {
 		return true;
 	};
-	virtual bool process() = 0;
+	virtual bool finish() { 
+		return true;
+	};
 	//Port* get_port(const string& name);
 
 	bool connect_port(const string& port_name, const string& mem_name);
