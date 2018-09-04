@@ -122,6 +122,12 @@ bool Board::CmdRun::process(vector<string> args) {
 		for (ModMap::iterator it = board->m_modules.begin(); it != board->m_modules.end(); ++it) {
 			const string &name = it->first;
 			Module *module = it->second;
+
+			if (!module->is_ready() && !module->init()) {
+				msg += "Couldn't initialize " + name + ".";
+				return false;
+			}
+
 			module->run();
 			msg += name + " is  runninng.";
 			if (it != --board->m_modules.end()) {
@@ -198,6 +204,7 @@ bool Board::CmdMemory::process(vector<string> args) {
 		msg = type + " " + args[i + 1] + " created.\n";
 	}
 	msg[msg.size() - 1] = '\0';
+	return true;
 }
 
 bool Board::CmdLsMem::process(vector<string> args) {
@@ -225,14 +232,25 @@ bool Board::CmdConnect::process(vector<string> args) {
 	string& port_name = args[1];
 	string& mem_name = args[2];
 
-	ModMap::iterator it = board->m_modules.find(mod_name);
-	if (it == board->m_modules.end()) {
+	ModMap::iterator mod_it = board->m_modules.find(mod_name);
+	if (mod_it == board->m_modules.end()) {
+		msg = "Couldn't find " + mod_name + ".";
+		return false;
+	}
+	Module* module = mod_it->second;
+
+	MemMap::iterator mem_it = board->m_memories.find(mem_name);
+	if (mem_it == board->m_memories.end()) {
+		msg = "Couldn't find " + mem_name + ".";
+		return false;
+	}
+	Memory* memory = mem_it->second;
+
+	if (!module->connect_memory(memory, port_name)) {
+		msg = "Couldn't connect " + mem_name + " to " + port_name + " " + mod_name + ".";
 		return false;
 	}
 
-	if (!it->second->connect_port(port_name, mem_name)) {
-		msg = "Couldn't connect " + port_name + " to " + mem_name + ".";
-		return false;
-	}
+	msg = mem_name + " connected to " + port_name + " at " + mod_name + ".";
 	return true;
 }

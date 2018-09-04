@@ -85,8 +85,7 @@ public:
 	};
 	//Port* get_port(const string& name);
 
-	bool connect_port(const string& port_name, const string& mem_name);
-
+	bool connect_memory(Memory* memory, const string& port);
 	bool set_data(const string& name, const string& data);
 	bool get_data(const string& name, string& data);
 
@@ -99,10 +98,12 @@ public:
 	void lock();
 	void unlock();
 
+	bool is_ready();
+
 protected:
 	bool m_brun;
-	bool m_bwait;
-	bool m_bfinish;
+	bool m_ready;
+
 	thread m_th;
 
 	condition_variable m_run;

@@ -103,10 +103,10 @@ void Module::register_port(const string& name, const string& disc, Memory** mem)
 //	return m_ports[name];
 //}
 
-bool Module::connect_port(const string& port_name, const string& mem_name) {
+bool Module::connect_memory(Memory* memory, const string& port_name) {
 	unique_lock<mutex> lock(m_lock);
 
-	PortMap::iterator pm_it  = m_ports.find(port_name);
+	PortMap::iterator pm_it = m_ports.find(port_name);
 	if (pm_it == m_ports.end())
 		return false;
 
@@ -114,12 +114,7 @@ bool Module::connect_port(const string& port_name, const string& mem_name) {
 	if (port->type != Port::TYPE::MEMORY)
 		return false;
 
-	MemMap::iterator mm_it = m_mems.find(mem_name);
-	if (mm_it == m_mems.end())
-		return false;
-	Memory* mem = mm_it->second;
-
-	port->mem = &mem;
+	*(port->mem) = memory;
 	return true;
 }
 
@@ -190,4 +185,8 @@ void Module::lock() {
 
 void Module::unlock() {
 	m_lock.unlock();
+}
+
+bool Module::is_ready() {
+	return m_ready;
 }
