@@ -15,6 +15,7 @@ public:
 	Clock(const double cf = 10.0);
 	
 	static void init();
+	
 	static void set_system_time(long long t);
 
 	void start();
@@ -27,6 +28,8 @@ public:
 
 private:
 	bool m_stop;
+	bool m_strick;
+
 	unsigned int m_cf; //clock frequency
 	long long m_num_clock;
 	long long m_num_proc;
@@ -34,6 +37,8 @@ private:
 	long long m_time_per_clock;
 	long long m_target_time;
 	long long m_delta;
+	long long m_time_after_sleep;
+	long long m_sum_diff;
 
 	double m_proc_rate;
 

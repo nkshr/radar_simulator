@@ -9,8 +9,8 @@ steady_clock::time_point Clock::m_start_time;
 long long Clock::m_base_time;
 mutex Clock::m_lock;
 
-Clock::Clock(const double cf) : m_stop(false), m_num_clock(0), m_num_proc(0), m_num_excess(0),
-m_cf(cf), m_target_time(0) {
+Clock::Clock(const double cf) : m_stop(false), m_strick(false), m_num_clock(0), m_num_proc(0), m_num_excess(0),
+m_cf(cf), m_target_time(0), m_delta(0), m_time_after_sleep(0), m_sum_diff(0){
 }
 
 void Clock::init() {
@@ -25,7 +25,7 @@ void Clock::set_system_time(long long t) {
 
 void Clock::start() {
 	m_time_per_clock = static_cast<long long>(round(1.0e9 / m_cf));
-	m_target_time = get_steady_time();
+	m_target_time = m_time_after_sleep = get_steady_time();
 }
 
 
@@ -37,31 +37,43 @@ void Clock::adjust() {
 	m_num_clock++;
 	m_num_proc++;
 	
-	const long long cur_time = get_steady_time();
-	m_base_time += cur_time;
+	long long diff = m_target_time - m_time_after_sleep;
+	m_sum_diff += abs(diff);
+
+	if(m_strick)
+		m_delta = m_delta * 0.9 + diff * 0.1;
+	else
+	m_delta = 0;
+
+	long long time_before_sleep = get_steady_time();
+
+	m_base_time += time_before_sleep;
 
 	m_target_time += m_time_per_clock;
 
+
 	long long sleep_time;
 
-	if (cur_time > m_target_time){
-		m_num_excess += (cur_time - m_target_time) / m_time_per_clock + 1;
-		const long long rem = cur_time % m_time_per_clock;
-		sleep_time = m_time_per_clock - rem;
-		m_target_time = cur_time + sleep_time;
+	if (time_before_sleep > m_target_time){
+		m_num_excess += (time_before_sleep - m_target_time) / m_time_per_clock + 1;
+		const long long rem = time_before_sleep % m_time_per_clock;
+		sleep_time = m_time_per_clock - rem + m_delta;
+		m_target_time = time_before_sleep + sleep_time;
 	}
 	else {
-		sleep_time = m_target_time - cur_time;
+		sleep_time = m_target_time - time_before_sleep + m_delta;
 	}
 
-#ifdef DEBUG_CLOCK
-	cout << "sleep time : " << duration_cast<milliseconds>(nanoseconds(sleep_time)).count() << endl;
 	sleep_for(nanoseconds(sleep_time));
-	
-	cout << "target time : " << 
-		duration_cast<milliseconds>(nanoseconds(m_target_time)).count() << endl;
 
-	cout << "current time : " << duration_cast<milliseconds>(nanoseconds(get_steady_time())).count() << endl;
+	m_time_after_sleep = get_steady_time();
+
+#ifdef DEBUG_CLOCK
+	cout << "sleep time : " << sleep_time << endl;	
+	cout << "target time : " << m_target_time << endl;
+	cout << "time after sleep : " << m_time_after_sleep << endl;
+	cout << "sum of difference : " << m_sum_diff << endl;
+	cout << "difference avgerage : " << (double)m_sum_diff / (double)m_num_clock << endl;
 #endif
 }
 
