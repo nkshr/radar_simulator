@@ -5,18 +5,12 @@ project(radar_simulator)
 set(COMMON_CPP_FILES
 	src/common/clock.cpp
 	src/common/miscel.cpp
-	src/common/object.cpp
-	src/common/tcp.cpp
-	src/common/udp.cpp
 )
 
 set(COMMON_HPP_FILES
 	src/common/clock.hpp
 	src/common/math.hpp
 	src/common/miscel.hpp
-	src/common/object.hpp
-	src/common/tcp.hpp
-	src/common/udp.hpp
 )
 
 set(MODULE_CPP_FILES

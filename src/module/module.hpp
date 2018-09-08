@@ -65,19 +65,29 @@ struct Port {
 	string name;
 	string disc;
 
-	union Ptr {
+	union Data {
 		bool* b;
 		int* i;
 		double* d;
 		string* s;
-		Memory** mem;
-
-		BoolSetCallback* bsc;
-		IntSetCallback* isc;
-		DoubleSetCallback* dsc;
-		StringSetCallback* ssc;
-	}ptr;
+	}data;
 	
+	union SetCallback {
+		BoolSetCallback* b;
+		IntSetCallback* i;
+		DoubleSetCallback* d;
+		StringSetCallback* s;
+	}sc;
+
+	union GetCallback {
+		BoolGetCallback* b;
+		IntGetCallback* i;
+		DoubleGetCallback* d;
+		StringGetCallback* s;
+	}gc;
+
+	Memory** mem;
+
 	Port::TYPE type;
 	
 
@@ -91,6 +101,15 @@ typedef map<const string, Port*> PortMap;
 
 class Module {
 public:
+	enum STATUS {
+		CREATED,
+		INITIALIZED,
+		RUNNING,
+		STOPPING,
+		STOPPED,
+		FINISHED,
+		STATUS_END
+	};
 
 	Module();
 	virtual ~Module() {};
@@ -123,17 +142,17 @@ public:
 	void lock();
 	void unlock();
 
-	bool is_ready();
+	STATUS get_status();
+	void set_status(STATUS);
 
 protected:
 	bool m_brun;
-	bool m_ready;
+
+	STATUS m_status;
 
 	double m_cf;
 
 	thread m_th;
-
-	condition_variable m_run;
 
 	Clock m_clock;
 
@@ -150,24 +169,24 @@ protected:
 	//	int value, MemInt** mem);
 	//void register_port(const string& name, const string& disc,
 	//	const string& str, MemString** mem);
-	void register_port(const string& name, const string& disc,
+	void register_bool(const string& name, const string& disc,
 		bool init_status, bool* status);
-	void register_port(const string& name, const string& disc,
+	void register_int(const string& name, const string& disc,
 		int init_val, int* val);
-	void register_port(const string& name, const string& disc,
+	void register_double(const string& name, const string& disc,
 		double init_val, double* val);
-	void register_port(const string& name, const string& disc,
+	void register_string(const string& name, const string& disc,
 		string init_str, string* str);
-	void register_port(const string& name, const string& disc,
+	void register_memory(const string& name, const string& disc,
 		Memory** mem);
-	//void register_port(const string& name, const string& disc,
-	//	function<void(bool)> func);
-	void register_port(const string& name, const string& disc,
-		function<void(int)> func);
-	void register_port(const string& name, const string& disc,
-		function<void(double)> func);
-	//void register_port(const string& name, const string& disc,
-	//	function<void(string)> func);
+	void register_bool_callback(const string& name, const string& disc,
+		BoolSetCallback bsc, BoolGetCallback bgc);
+	void register_int_callback(const string& name, const string& disc,
+		IntSetCallback isc, IntGetCallback igc);
+	void register_double_callback(const string& name, const string& disc,
+		DoubleSetCallback isc, DoubleGetCallback dgc);
+	void register_string_callback(const string& name, const string& disc,
+		StringSetCallback ssc, StringGetCallback sgc);
 
 
 private:

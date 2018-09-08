@@ -3,6 +3,8 @@
 #include <string>
 #include <mutex>
 
+#include <WinSock2.h>
+
 #include "common/clock.hpp"
 #include "common/miscel.hpp"
 
@@ -48,9 +50,6 @@ private:
 		string help;
 	};
 
-	string cmd_strs[CMD::CMD_END] = { "module", "set", "get", "lsmod", "lsport", "run", "finish", "ping", "memory" };
-	string cmd_helps[CMD::CMD_END];
-
 	bool m_brun;
 	bool m_bdebug;
 	mutex m_lock;
@@ -86,7 +85,7 @@ private:
 	struct CmdProcess {
 		CmdProcess(Board* board);
 
-		virtual bool process(vector<string> args) = 0;
+		virtual bool process(vector<string>& args) = 0;
 
 		Board* board;
 
@@ -107,61 +106,61 @@ private:
 			help[help.size() - 1] = '\0';
 		};
 
-		virtual bool process(vector<string> args);
+		virtual bool process(vector<string>& args);
 	};
 
 	struct CmdSet : public CmdProcess {
 		CmdSet(Board* board) : CmdProcess(board) {
 		};
-		virtual bool process(vector<string> args);
+		virtual bool process(vector<string>& args);
 	};
 
 	struct CmdGet : public CmdProcess {
 		CmdGet(Board* board) : CmdProcess(board) {
 		};
-		virtual bool process(vector<string> args);
+		virtual bool process(vector<string>& args);
 	};
 
 	struct CmdLsMod : public CmdProcess {
 		CmdLsMod(Board* board) : CmdProcess(board) {
 		};
-		virtual bool process(vector<string> args);
+		virtual bool process(vector<string>& args);
 	};
 
 	struct CmdLsPort : public CmdProcess {
 		CmdLsPort(Board* board) : CmdProcess(board) {
 		};
-		virtual bool process(vector<string> args);
+		virtual bool process(vector<string>& args);
 	};
 
 	struct CmdRun : public CmdProcess {
 		CmdRun(Board* board) : CmdProcess(board) {
 		};
-		virtual bool process(vector<string> args);
+		virtual bool process(vector<string>& args);
 	};
 
 	struct CmdFinish : public CmdProcess {
 		CmdFinish(Board* board) : CmdProcess(board) {
 		};
-		virtual bool process(vector<string> args);
+		virtual bool process(vector<string>& args);
 	};
 
 	struct CmdShutdown : public CmdProcess {
 		CmdShutdown(Board* board) : CmdProcess(board) {
 		};
-		virtual bool process(vector<string> args);
+		virtual bool process(vector<string>& args);
 	};
 
 	struct CmdPing : public CmdProcess {
 		CmdPing(Board* board) : CmdProcess(board) {
 		};
-		virtual bool process(vector<string> args);
+		virtual bool process(vector<string>& args);
 	};
 
 	struct CmdMemory : public CmdProcess {
 		CmdMemory(Board* board) : CmdProcess(board) {
 		};
-		virtual bool process(vector<string> args);
+		virtual bool process(vector<string>& args);
 	};
 
 	struct CmdLsMem : public CmdProcess {
@@ -169,13 +168,19 @@ private:
 			help = "ls <target>\n";
 			help += "list arbitrary object.";
 		};
-		virtual bool process(vector<string> args);
+		virtual bool process(vector<string>& args);
 	};
 
 	struct CmdConnect : public CmdProcess {
 		CmdConnect(Board* board) : CmdProcess(board) {
 		}
-		virtual bool process(vector<string> args);
+		virtual bool process(vector<string>& args);
+	};
+
+	struct CmdStop : public CmdProcess {
+		CmdStop(Board* board) : CmdProcess(board) {
+		}
+		virtual bool process(vector<string>& args);
 	};
 
 	CmdProcMap m_cmd_procs;

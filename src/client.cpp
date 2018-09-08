@@ -3,8 +3,9 @@
 #include <string>
 #include <vector>
 
+#include <WinSock2.h>
+
 #include "common/miscel.hpp"
-#include "common/udp.hpp"
 
 using namespace std;
 

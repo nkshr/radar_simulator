@@ -1,3 +1,5 @@
+#pragma once
+
 #include "module.hpp"
 
 using std::cout;
@@ -6,10 +8,9 @@ using std::endl;
 class RsimTest : public Module {
 protected:
 	bool m_bprint;
-
 public:
 	RsimTest() : Module(){
-		register_port("print", "boolean value for printing time.(default y)", true, &m_bprint);
+		register_bool("print", "boolean value for printing time.(default y)", true, &m_bprint);
 	}
 
 	virtual bool init() {
@@ -21,7 +22,6 @@ public:
 
 		if (m_bprint)
 			cout << m_clock.get_steady_time() << endl;
-
 		return true;
 	};
 

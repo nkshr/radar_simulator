@@ -5,7 +5,6 @@
 //#include <mutex>
 
 #include "config.hpp"
-#include "udp.hpp"
 
 using std::string;
 using std::vector;
@@ -37,38 +36,6 @@ struct CmdParser {
 };
 
 const static string cmd_delims = " ";
-
-class CmdClient {
-public:
-	CmdClient() {};
-	bool init();
-
-	const string& get_get_result() const;
-	const vector<string>& get_ls_results() const;
-
-	bool request(const string& cmd, const vector<string>& args);
-
-	void set_server(const string& addr, int port);
-	void set_client(const string& addr, int port);
-
-	bool is_cmd_success() const;
-
-	const char* get_error_msg() const;
-
-private:
-	bool m_cmd_success;
-
-	string m_emsg;
-	string m_get_result;
-
-	string m_delims;
-
-	char m_rmsg[config::buf_size];
-
-	vector<string> m_ls_results;
-
-	UDPSock m_udp;
-};
 
 //class CmdServer {
 //public:

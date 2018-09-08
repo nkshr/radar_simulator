@@ -48,6 +48,7 @@ Board::Board() :m_brun(true), m_bdebug(true) {
 	register_cmd_proc<CmdShutdown>("shutdown");
 	register_cmd_proc<CmdLsMem>("lsmem");	
 	register_cmd_proc<CmdConnect>("connect");
+	register_cmd_proc<CmdStop>("stop");
 }
 
 bool Board::init() {

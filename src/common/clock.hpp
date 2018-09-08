@@ -25,6 +25,7 @@ public:
 	long long get_steady_time() const;
 	long long get_system_time() const;
 	long long get_time_per_clock() const;
+	double get_clock_freq() const;
 
 	void set_clock_freq(double cf);
 
