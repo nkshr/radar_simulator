@@ -26,6 +26,8 @@ public:
 	long long get_system_time() const;
 	long long get_time_per_clock() const;
 
+	void set_clock_freq(double cf);
+
 private:
 	bool m_stop;
 	bool m_strick;

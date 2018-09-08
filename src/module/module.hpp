@@ -4,6 +4,9 @@
 #include <thread>
 #include <queue>
 #include <condition_variable>
+#include <complex>
+
+#include <functional>
 
 #include "../common/miscel.hpp"
 #include "../memory/memory.hpp"
@@ -15,6 +18,17 @@ using std::queue;
 using std::condition_variable;
 using std::unique_lock;
 using std::pair;
+using std::function;
+
+typedef function<void(bool)> BoolSetCallback;
+typedef function<void(int)> IntSetCallback;
+typedef function<void(double)> DoubleSetCallback;
+typedef function<void(string)> StringSetCallback;
+
+typedef function<bool()> BoolGetCallback;
+typedef function<int()> IntGetCallback;
+typedef function<double()> DoubleGetCallback;
+typedef function<string()> StringGetCallback;
 
 struct LatLon {
 	double deg;
@@ -41,21 +55,32 @@ struct Port {
 		DOUBLE,
 		STRING,
 		MEMORY,
+		BOOL_CALLBACK,
+		INT_CALLBACK,
+		DOUBLE_CALLBACK,
+		STRING_CALLBACK,
 		TYPE_END
 	};
 
 	string name;
 	string disc;
-	//MemPtr mem;
-	Memory** mem;
+
 	union Ptr {
 		bool* b;
 		int* i;
 		double* d;
 		string* s;
-	}pdata;
+		Memory** mem;
 
+		BoolSetCallback* bsc;
+		IntSetCallback* isc;
+		DoubleSetCallback* dsc;
+		StringSetCallback* ssc;
+	}ptr;
+	
 	Port::TYPE type;
+	
+
 };
 
 struct SignalPort : public Port {
@@ -104,6 +129,8 @@ protected:
 	bool m_brun;
 	bool m_ready;
 
+	double m_cf;
+
 	thread m_th;
 
 	condition_variable m_run;
@@ -133,6 +160,16 @@ protected:
 		string init_str, string* str);
 	void register_port(const string& name, const string& disc,
 		Memory** mem);
+	//void register_port(const string& name, const string& disc,
+	//	function<void(bool)> func);
+	void register_port(const string& name, const string& disc,
+		function<void(int)> func);
+	void register_port(const string& name, const string& disc,
+		function<void(double)> func);
+	//void register_port(const string& name, const string& disc,
+	//	function<void(string)> func);
+
+
 private:
 	mutex m_lock;
 };

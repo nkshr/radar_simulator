@@ -22,20 +22,13 @@ set(COMMON_HPP_FILES
 set(MODULE_CPP_FILES
 	src/module/module.cpp
 	src/module/rsim_test.cpp
-	#src/module/cmd_receiver.cpp
-	#src/module/cmd_sender.cpp
-	#src/module/data_server.cpp
-	#src/module/modulator.cpp
-	#src/module/simulator.cpp
+	src/module/time_sync.cpp
 )
 
 set(MODULE_HPP_FILES
 	src/module/module.hpp
 	src/module/rsim_test.hpp
-	#src/module/cmd_receiver.hpp
-	#src/module/cmd_sender.hpp
-	#src/module/data_server.hpp
-	#src/module/simulator.hpp
+	src/module/time_sync.hpp
 )
 
 set(MEMORY_CPP_FILES

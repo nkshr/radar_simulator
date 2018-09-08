@@ -91,3 +91,8 @@ long long Clock::get_system_time() const {
 long long Clock::get_time_per_clock() const {
 	return m_time_per_clock;
 }
+
+void Clock::set_clock_freq(double cf){
+	m_cf = cf;
+	m_time_per_clock = static_cast<long long>(round(1.0e9 / m_cf));
+}
