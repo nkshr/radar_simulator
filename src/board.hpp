@@ -220,10 +220,6 @@ public:
 
 	bool connect(const string& mname0, const string& pname0,
 		const string& mname1, const string& pname1);
-
-	vector<string> get_module_names() const;
-	vector<string> get_module_types() const;
-	ModMap& get_modules();
 	
 	mutex* get_lock();
 };

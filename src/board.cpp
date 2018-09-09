@@ -281,31 +281,6 @@ bool Board::connect(const string& out_mod_name , const string& out_port_name,
 	return true;
 }
 
-vector<string> Board::get_module_names() const {
-	vector<string> names;
-	names.reserve(m_modules.size());
-
-	for each(pair<string, Module*> module in m_modules) {
-		names.push_back(module.first);
-	}
-
-	return names;	
-}
-
-vector<string> Board::get_module_types() const {
-	vector<string> types;
-	types.reserve(m_mod_creators.size());
-
-	for each(pair<string, ModCreator> mcreator in m_mod_creators) {
-		types.push_back(mcreator.first);
-	}
-	return types;
-}
-
-ModMap& Board::get_modules(){
-	return m_modules;
-}
-
 template <typename T>
 void Board::register_cmd_proc(const string& name) {
 	CmdProcess* cmd_proc = dynamic_cast<CmdProcess*>(new T(this));

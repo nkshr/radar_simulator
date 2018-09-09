@@ -161,14 +161,7 @@ protected:
 	PortMap m_ports;
 
 	MemMap m_mems;
-	//void register_port(const string& name, const string& disc,
-	//	const string& data, MEM_TYPE mem_type, Memory** mem);
-	//void register_port(const string& name, const string& disc,
-	//	bool status, MemBool** mem);
-	//void register_port(const string& name, const string& disc,
-	//	int value, MemInt** mem);
-	//void register_port(const string& name, const string& disc,
-	//	const string& str, MemString** mem);
+
 	void register_bool(const string& name, const string& disc,
 		bool init_status, bool* status);
 	void register_int(const string& name, const string& disc,

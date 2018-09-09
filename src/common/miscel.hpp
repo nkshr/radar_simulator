@@ -15,7 +15,6 @@ const static string cmd_err_str = "err";
 const static string cmd_suc_str = "suc";
 
 #define PRINT_DMSG(msg) std::cout << msg << << " " << __FILEW__ <<  " " << __LINE__ << std::endl;
-//string cmd_to_str(const Cmd& cmd);
 
 void split(const string& buf, const string& delimes, vector<string>& toks);
 
@@ -36,30 +35,6 @@ struct CmdParser {
 };
 
 const static string cmd_delims = " ";
-
-//class CmdServer {
-//public:
-//	CmdServer();
-//	bool init();
-//	bool listen();
-//
-//	bool send_error(const string& msg);
-//	bool send_success(const string& msg);
-//
-//	void set_server(const string& addr, int port);
-//
-//	const string& get_cmd() const;
-//	const vector<string>& get_args() const;
-//
-//private:
-//	char m_rmsg[config::buf_size];
-//
-//
-//
-//
-//	UDPSock m_udp;
-//	CmdParser m_cp;
-//};
 
 struct string_comparator {
 	bool operator()(const char* str1, const char* str2) {
@@ -89,12 +64,6 @@ template <typename T>
 T* create_instance();
 
 string bool_to_str(bool status);
-//class Mutex {
-//public:
-//	Mutex(mutex* lock);
-//	~Mutex();
-//private:
-//	mutex* m_lock;
-//};
 
 bool str_to_bool(const string& str, bool& status);
+
