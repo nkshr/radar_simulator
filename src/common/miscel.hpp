@@ -67,3 +67,6 @@ string bool_to_str(bool status);
 
 bool str_to_bool(const string& str, bool& status);
 
+int32_t calc_checksum(char* buf, int buf_size);
+
+bool check_checksum(char* buf, int buf_size, int32_t checksum);

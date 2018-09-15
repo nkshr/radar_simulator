@@ -149,3 +149,25 @@ bool str_to_bool(const string& str, bool& status) {
 
 	return true;
 }
+
+//Maximul buffer size is 8224 bytes. 
+ int32_t calc_checksum(char* buf, int buf_size) {
+	int32_t sum = 0;
+	for (int i = 0; i < buf_size; ++i) {
+		sum += (int32_t)buf[i];
+	}
+
+	return sum - 1;
+}
+
+ bool check_checksum(char* buf, int buf_size, int32_t checksum) {
+	 int32_t sum = 0;
+	 for (int i = 0; i < buf_size; ++i) {
+		 sum += (int32_t)buf[i];
+	 }
+	 sum -= 1;
+	 if (sum == checksum)
+		 return true;
+	 else
+		 return false;
+ }

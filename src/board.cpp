@@ -8,13 +8,15 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-#include "module/rsim_test.hpp"
 #include "module/module.hpp"
 #include "common/miscel.hpp"
 
 #include "command.hpp"
 
 #include "board.hpp"
+
+#include "module/rsim_test.hpp"
+#include "module/time_sync.hpp"
 
 using std::cout;
 using std::cerr;
@@ -31,6 +33,7 @@ Board::Board() :m_brun(true), m_bdebug(true) {
 	m_myself.sin_addr.s_addr = inet_addr("127.0.0.1");
 	m_myself.sin_port = htons(8080);
 
+	register_module<TimeSync>("time_sync");
 	register_module<RsimTest>("rsim_test");
 
 	register_memory<MemBool>("bool");
