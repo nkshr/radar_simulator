@@ -33,7 +33,8 @@ Board::Board() :m_brun(true), m_bdebug(true) {
 	m_myself.sin_addr.s_addr = inet_addr("127.0.0.1");
 	m_myself.sin_port = htons(8080);
 
-	register_module<TimeSync>("time_sync");
+	register_module<TimeSyncServer>("time_sync_server");
+	register_module<TimeSyncClient>("time_sync_client");
 	register_module<RsimTest>("rsim_test");
 
 	register_memory<MemBool>("bool");

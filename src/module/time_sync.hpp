@@ -4,10 +4,8 @@
 
 #include "module.hpp"
 
-class TimeSync : public  Module{
-private:
-	bool m_bserver;
-	
+class TimeSyncServer : public  Module{
+private:	
 	int m_port;
 
 	sockaddr_in m_myself;
@@ -15,12 +13,24 @@ private:
 	SOCKET m_myself_sock;
 	
 public:
-	TimeSync();
-	~TimeSync();
+	TimeSyncServer();
+	~TimeSyncServer();
 	virtual bool init();
 	virtual bool process();
 	virtual bool finish();
 
-	bool server_process();
-	bool client_process();
+};
+
+class TimeSyncClient : public Module {
+private:
+	int m_port;
+	sockaddr_in m_myself;
+	SOCKET m_myself_sock;
+
+public:
+	TimeSyncClient();
+	~TimeSyncClient();
+	virtual bool init();
+	virtual bool process();
+	virtual bool finish();
 };

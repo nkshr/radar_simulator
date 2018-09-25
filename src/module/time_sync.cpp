@@ -5,18 +5,17 @@
 using std::cout;
 using std::endl;
 
-#define REQUEST 0x0000;
-#define REPLY 0xFFFF;
+#define REQUEST 0x0000
+#define REPLY 0xFFFF
 
-TimeSync::TimeSync() : Module(), m_bserver(false) {
-	register_bool("server", "flag which determimns if this module is master of time synqhronization. ", true, &m_bserver);
+TimeSyncServer::TimeSyncServer() : Module() {
 	register_int("port", "port number for network time protocol.(default).", 9090, &m_port);
 }
 
-TimeSync::~TimeSync() {
+TimeSyncServer::~TimeSyncServer() {
 
 }
-bool TimeSync::init() {
+bool TimeSyncServer::init() {
 	m_myself_sock = socket(m_myself.sin_family, SOCK_STREAM, 0);
 	if (m_myself_sock == INVALID_SOCKET) {
 		cerr << "Socket creation error : " << WSAGetLastError() << endl;
@@ -34,19 +33,7 @@ bool TimeSync::init() {
 	return true;
 }
 
-bool TimeSync::process() {
-	if (m_bserver)
-		return server_process();
-	else
-		return client_process();
-}
-
-bool TimeSync::finish() {
-	return true;
-}
-
-bool TimeSync::server_process() {
-
+bool TimeSyncServer::process() {
 	long long cur_time = m_clock.get_system_time();
 	int res = listen(m_myself_sock, SOMAXCONN);
 	if (res == SOCKET_ERROR) {
@@ -74,7 +61,12 @@ bool TimeSync::server_process() {
 
 	//analyze message
 	if (msg_size != 1) {
-		cerr << "Size of received message is invalid." << endl;
+		cerr << "Size of received message was invalid." << endl;
+		return false;
+	}
+
+	if (msg[0] != REQUEST) {
+		cerr << "Invalid message was received." << endl;
 		return false;
 	}
 
@@ -90,7 +82,25 @@ bool TimeSync::server_process() {
 	return true;
 }
 
-bool TimeSync::client_process() {
+bool TimeSyncServer::finish() {
 	return true;
 }
 
+TimeSyncClient::TimeSyncClient() : Module() {
+	register_int("sport", "port number for network time protocol.(default).", 9090, &m_port);
+}
+
+TimeSyncClient::~TimeSyncClient() {
+}
+
+bool TimeSyncClient::init() {
+	return true;
+}
+
+bool TimeSyncClient::process() {
+	return  true;
+}
+
+bool TimeSyncClient::finish() {
+	return true;
+}
