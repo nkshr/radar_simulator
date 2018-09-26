@@ -6,11 +6,13 @@
 
 class TimeSyncServer : public  Module{
 private:	
+	bool m_bupdate;
+
 	int m_port;
 
-	sockaddr_in m_myself;
+	sockaddr_in m_server;
 
-	SOCKET m_myself_sock;
+	SOCKET m_server_sock;
 	
 public:
 	TimeSyncServer();

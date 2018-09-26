@@ -9,22 +9,28 @@ using std::endl;
 #define REPLY 0xFFFF
 
 TimeSyncServer::TimeSyncServer() : Module() {
+	register_bool("update", "update port number(default n)", false, &m_bupdate);
 	register_int("port", "port number for network time protocol.(default).", 9090, &m_port);
+
+	m_server.sin_family = AF_INET;
+	m_server.sin_addr.s_addr = INADDR_ANY;
+	m_server.sin_port = htons(m_port);
 }
 
 TimeSyncServer::~TimeSyncServer() {
 
 }
 bool TimeSyncServer::init() {
-	m_myself_sock = socket(m_myself.sin_family, SOCK_STREAM, 0);
-	if (m_myself_sock == INVALID_SOCKET) {
+	m_server_sock = socket(m_server.sin_family, SOCK_DGRAM, 0);
+	if (m_server_sock == INVALID_SOCKET) {
 		cerr << "Socket creation error : " << WSAGetLastError() << endl;
-		closesocket(m_myself_sock);
+		closesocket(m_server_sock);
 		WSACleanup();
 		return false;
 	}
 
-	int res = bind(m_myself_sock, (sockaddr*)&m_myself, sizeof(m_myself));
+
+	int res = bind(m_server_sock, (sockaddr*)&m_server, sizeof(m_server));
 	if (res == SOCKET_ERROR) {
 		cerr << "bind failed with error : " << WSAGetLastError() << endl;
 		return false;
@@ -34,26 +40,27 @@ bool TimeSyncServer::init() {
 }
 
 bool TimeSyncServer::process() {
+	if (m_bupdate) {
+		int res = bind(m_server_sock, (sockaddr*)&m_server, sizeof(m_server));
+		if (res == SOCKET_ERROR) {
+			cerr << "bind failed with error : " << WSAGetLastError() << endl;
+			return false;
+		}
+
+		m_bupdate = false;
+	}
+
 	long long cur_time = m_clock.get_system_time();
-	int res = listen(m_myself_sock, SOMAXCONN);
-	if (res == SOCKET_ERROR) {
-		cerr << "listen failed with error : " << WSAGetLastError() << endl;
-		return true;
-	}
 
-	SOCKET target_sock = accept(m_myself_sock, NULL, NULL);
-	if (target_sock == INVALID_SOCKET) {
-		cerr << "accept failed with error : " << WSAGetLastError() << endl;
-		return true;
-	}
-
+	sockaddr_in client_sock;
+	int client_sock_len;
 	const int msg_size = 1024;
 	char msg[msg_size];
 
-
-	res = recv(target_sock, msg, msg_size, 0);
+	int res = recvfrom(m_server_sock, msg, msg_size, 0,
+		(struct sockaddr *) &client_sock, &client_sock_len);
 	if (res == SOCKET_ERROR) {
-		cerr << "recv failed with error : " << WSAGetLastError() << endl;
+		cerr << "recvfrom failed with error : " << WSAGetLastError() << endl;
 		return true;
 	}
 
@@ -73,7 +80,7 @@ bool TimeSyncServer::process() {
 	msg[0] = REPLY;
 
 	memcpy((void*)&msg[1], (void*)m_clock.get_system_time(), sizeof(long long));
-	res = send(target_sock, msg, msg_size, 0);
+	res = send(m_server_sock, msg, msg_size, 0);
 
 	if (res != msg_size) {
 		cerr << "send failed with error : " << WSAGetLastError() << endl;
@@ -87,10 +94,11 @@ bool TimeSyncServer::finish() {
 }
 
 TimeSyncClient::TimeSyncClient() : Module() {
-	register_int("sport", "port number for network time protocol.(default).", 9090, &m_port);
+	register_int("port", "port number for network time protocol.(default).", 9090, &m_port);
 }
 
 TimeSyncClient::~TimeSyncClient() {
+	
 }
 
 bool TimeSyncClient::init() {

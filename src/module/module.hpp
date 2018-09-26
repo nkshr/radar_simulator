@@ -20,10 +20,10 @@ using std::unique_lock;
 using std::pair;
 using std::function;
 
-typedef function<void(bool)> BoolSetCallback;
-typedef function<void(int)> IntSetCallback;
-typedef function<void(double)> DoubleSetCallback;
-typedef function<void(string)> StringSetCallback;
+typedef function<bool(bool)> BoolSetCallback;
+typedef function<bool(int)> IntSetCallback;
+typedef function<bool(double)> DoubleSetCallback;
+typedef function<bool(string)> StringSetCallback;
 
 typedef function<bool()> BoolGetCallback;
 typedef function<int()> IntGetCallback;

@@ -7,7 +7,7 @@ template class function<void(double)>;
 
 Module::Module() :  m_brun(true), m_status(Module::STATUS::CREATED) {
 	register_double_callback("cf", "clock frequency(default 10.0).",
-		[&](double cf) {m_clock.set_clock_freq(cf); },
+		[&](double cf) {m_clock.set_clock_freq(cf); return true; },
 		[&]() {return m_clock.get_clock_freq(); });
 }
 
@@ -210,14 +210,11 @@ bool Module::set_data(const string& name, const string& data) {
 		}
 		return true;
 	case Port::TYPE::INT_CALLBACK:
-		(*port->sc.i)(stoi(data));
-		return true;
+		return (*port->sc.i)(stoi(data));
 	case  Port::TYPE::DOUBLE_CALLBACK:
-		(*port->sc.d)(stod(data));
-		return true;
+		return (*port->sc.d)(stod(data));
 	case Port::TYPE::STRING_CALLBACK:
-		(*port->sc.s)(data);
-		return true;
+		return (*port->sc.s)(data);
 	default:
 		return false;
 	}
