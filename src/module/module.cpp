@@ -5,10 +5,12 @@ using namespace std;
 template class function<double()>;
 template class function<void(double)>;
 
-Module::Module() :  m_brun(true), m_status(Module::STATUS::CREATED) {
+Module::Module() :  m_brun(true), m_bdebug(false), m_status(Module::STATUS::CREATED) {
+	m_clock = m_board->get_clock();
+	register_bool("debug", "debug flag(default no).", false, &m_bdebug);
 	register_double_callback("cf", "clock frequency(default 10.0).",
-		[&](double cf) {m_clock.set_clock_freq(cf); return true; },
-		[&]() {return m_clock.get_clock_freq(); });
+		[&](double cf) {m_clock->set_clock_freq(cf); return true; },
+		[&]() {return m_clock->get_clock_freq(); });
 }
 
 void Module::run() {
@@ -21,7 +23,7 @@ void Module::join() {
 }
 
 void Module::processing_loop() {
-	m_clock.start();
+	m_clock->start();
 
 	while (true) {
 
@@ -31,10 +33,10 @@ void Module::processing_loop() {
 				break;
 		}
 
-		m_clock.adjust();
+		m_clock->adjust();
 	}
 
-	m_clock.stop();
+	m_clock->stop();
 }
 
 void Module::stop() {
@@ -282,4 +284,14 @@ Module::STATUS Module::get_status() {
 
 void Module::set_status(STATUS status) {
 	m_status = status;
+}
+
+void Module::set_time(long long t) {
+	m_board->lock();
+	m_board->set_time(t);
+	m_board->unlock();
+}
+
+long long Module::get_time() {
+	return m_clock->get_system_time();
 }

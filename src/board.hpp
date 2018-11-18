@@ -185,6 +185,7 @@ private:
 
 	CmdProcMap m_cmd_procs;
 
+	Clock m_clock;
 
 public:
 	Board();
@@ -222,4 +223,9 @@ public:
 		const string& mname1, const string& pname1);
 	
 	mutex* get_lock();
+
+	Clock* get_clock();
+
+	void set_time(long long t);
+	long long get_time();
 };

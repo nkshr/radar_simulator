@@ -290,3 +290,15 @@ void Board::register_cmd_proc(const string& name) {
 	CmdProcess* cmd_proc = dynamic_cast<CmdProcess*>(new T(this));
 	m_cmd_procs.insert(pair<string, CmdProcess*>(name, cmd_proc));
 }
+
+void Board::set_time(long long t) {
+	m_clock.set_system_time(t);
+}
+
+long long Board::get_time() {
+	return m_clock.get_system_time();
+}
+
+Clock * Board::get_clock() {
+	return m_clock.clone();
+}

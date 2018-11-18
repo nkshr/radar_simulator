@@ -5,26 +5,27 @@ using namespace std;
 using namespace std::chrono;
 using namespace std::this_thread;
 
-steady_clock::time_point Clock::m_start_time;
-long long Clock::m_base_time;
-mutex Clock::m_lock;
-
-Clock::Clock(const double cf) : m_stop(false), m_strick(false), m_num_clock(0), m_num_proc(0), m_num_excess(0),
-m_cf(cf), m_target_time(0), m_delta(0), m_time_after_sleep(0), m_sum_diff(0){
+Clock::Clock() : m_stop(false), m_strick(false), m_num_clock(0), m_num_proc(0), m_num_excess(0),
+m_cf(10), m_target_time(0), m_delta(0), m_time_after_sleep(0), m_sum_diff(0), m_ref_ste_time(0ll){
 }
 
 void Clock::init() {
 	unique_lock<mutex> lock(m_lock);
-	m_start_time = steady_clock::now();
-	m_base_time = 0;
 }
 
 void Clock::set_system_time(long long t) {
-	m_base_time = t;
+	m_ref_ste_time = t;
+	for (list<Clock*>::iterator it = m_clocks.begin(); it != m_clocks.end(); it++) {
+		Clock * clock = (*it);
+		clock->lock();
+		clock->set_system_time(t);
+		clock->unlock();
+	}
 }
 
 void Clock::start() {
 	m_time_per_clock = static_cast<long long>(round(1.0e9 / m_cf));
+	m_ref_ste_time = get_steady_time();
 	m_target_time = m_time_after_sleep = get_steady_time();
 }
 
@@ -43,11 +44,9 @@ void Clock::adjust() {
 	if(m_strick)
 		m_delta = m_delta * 0.9 + diff * 0.1;
 	else
-	m_delta = 0;
+		m_delta = 0;
 
 	long long time_before_sleep = get_steady_time();
-
-	m_base_time += time_before_sleep;
 
 	m_target_time += m_time_per_clock;
 
@@ -77,15 +76,19 @@ void Clock::adjust() {
 #endif
 }
 
-
-
-long long Clock::get_steady_time() const{
-	return nanoseconds((steady_clock::now() - m_start_time)).count();
+Clock* Clock::clone() {
+	Clock * clock = new Clock();
+	m_clocks.push_back(clock);
+	clock->set_system_time(get_system_time());
+	return clock;
 }
 
-long long Clock::get_system_time() const {
-	unique_lock<mutex> lock(m_lock);
-	return get_steady_time() + m_base_time;
+long long Clock::get_steady_time() const{
+	return steady_clock::now().time_since_epoch().count() - m_ref_ste_time;
+}
+
+long long Clock::get_system_time(){
+	return get_steady_time();
 }
 
 long long Clock::get_time_per_clock() const {
@@ -99,4 +102,12 @@ double Clock::get_clock_freq() const {
 void Clock::set_clock_freq(double cf){
 	m_cf = cf;
 	m_time_per_clock = static_cast<long long>(round(1.0e9 / m_cf));
+}
+
+void Clock::lock() {
+	m_lock.lock();
+}
+
+void Clock::unlock() {
+	m_lock.unlock();
 }

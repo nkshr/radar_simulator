@@ -30,24 +30,6 @@ typedef function<int()> IntGetCallback;
 typedef function<double()> DoubleGetCallback;
 typedef function<string()> StringGetCallback;
 
-struct LatLon {
-	double deg;
-	double min;
-	double sec;
-};
-
-struct Ship {
-	int mmsi;
-	double x, y, z;
-	LatLon lat, lon;
-};
-
-
-union MemPtr {
-	MemInt* mem_int;
-};
-
-
 struct Port {
 	enum TYPE{
 		BOOL,
@@ -148,13 +130,15 @@ public:
 protected:
 	bool m_brun;
 
+	bool m_bdebug;
+
 	STATUS m_status;
 
 	double m_cf;
 
 	thread m_th;
 
-	Clock m_clock;
+	Clock * m_clock;
 
 	Board *m_board;
 
@@ -181,6 +165,9 @@ protected:
 	void register_string_callback(const string& name, const string& disc,
 		StringSetCallback ssc, StringGetCallback sgc);
 
+	void set_time(long long t);
+	
+	long long get_time();
 
 private:
 	mutex m_lock;
