@@ -232,14 +232,11 @@ bool Board::get_data(const string& mname, const string& pname, string& data) {
 	return module->get_data(pname, data);
 }
 
-mutex* Board::get_lock() {
-	return &m_lock;
-}
 
 bool Board::create_module(const string& type, const string& name) {
 	for (ModCreatorMap::iterator it = m_mod_creators.begin(); it != m_mod_creators.end(); ++it) {
 		if (it->first == type) {
-			Module* m = (this->*(it->second))();
+			Module* m = (this->*(it->second))(this);
 			m_modules.insert(pair<const string, Module*>(name, m));
 			return true;
 		}
@@ -248,8 +245,8 @@ bool Board::create_module(const string& type, const string& name) {
 }
 
 template <typename T>
-Module* Board::create_module() {
-	return dynamic_cast<Module*>(new T);
+Module* Board::create_module(Board * board){
+	return dynamic_cast<Module*>(new T(board));
 }
 
 bool Board::create_memory(const string& type, const string& name) {
@@ -292,11 +289,12 @@ void Board::register_cmd_proc(const string& name) {
 }
 
 void Board::set_time(long long t) {
-	m_clock.set_system_time(t);
+	m_clock.set_time(t);
+	
 }
 
 long long Board::get_time() {
-	return m_clock.get_system_time();
+	return m_clock.get_time();
 }
 
 Clock * Board::get_clock() {

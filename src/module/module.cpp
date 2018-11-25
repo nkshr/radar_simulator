@@ -1,3 +1,6 @@
+#include <iomanip>
+#include <iostream>
+
 #include "module.hpp"
 
 using namespace std;
@@ -5,8 +8,10 @@ using namespace std;
 template class function<double()>;
 template class function<void(double)>;
 
-Module::Module() :  m_brun(true), m_bdebug(false), m_status(Module::STATUS::CREATED) {
+Module::Module(Board * board) : m_board(board),  m_brun(true), m_bdebug(false), m_status(Module::STATUS::CREATED) {
+	m_board->lock();
 	m_clock = m_board->get_clock();
+	m_board->unlock();
 	register_bool("debug", "debug flag(default no).", false, &m_bdebug);
 	register_double_callback("cf", "clock frequency(default 10.0).",
 		[&](double cf) {m_clock->set_clock_freq(cf); return true; },
@@ -287,11 +292,17 @@ void Module::set_status(STATUS status) {
 }
 
 void Module::set_time(long long t) {
-	m_board->lock();
-	m_board->set_time(t);
-	m_board->unlock();
+	//m_board->lock();
+	//m_board->set_time(t);
+	//m_board->unlock();
 }
 
 long long Module::get_time() {
-	return m_clock->get_system_time();
+	return m_clock->get_time();
+}
+
+string Module::get_time_by_string() {
+	time_t tt(get_time()/1000000000);
+	string str(ctime(&tt));
+	return str;
 }

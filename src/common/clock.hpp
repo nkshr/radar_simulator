@@ -18,14 +18,13 @@ public:
 	
 	void init();
 	
-	void set_system_time(long long t);
+	void set_time(long long t);
 
 	void start();
 	void stop();
 	void adjust();
 	
-	long long get_steady_time() const;
-	long long get_system_time();
+	long long get_time() const;
 	long long get_time_per_clock() const;
 	double get_clock_freq() const;
 
@@ -53,9 +52,8 @@ private:
 
 	double m_proc_rate;
 
-	long long m_ref_ste_time;
-
-	long long m_ref_sys_time;
+	long long m_ref_time;
+	long long m_base_time;
 
 	mutex m_lock;
 

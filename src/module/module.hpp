@@ -93,7 +93,7 @@ public:
 		STATUS_END
 	};
 
-	Module();
+	Module(Board * board);
 	virtual ~Module() {};
 	void run();
 	void join();
@@ -169,6 +169,7 @@ protected:
 	
 	long long get_time();
 
+	string get_time_by_string();
 private:
 	mutex m_lock;
 };

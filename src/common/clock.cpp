@@ -6,27 +6,27 @@ using namespace std::chrono;
 using namespace std::this_thread;
 
 Clock::Clock() : m_stop(false), m_strick(false), m_num_clock(0), m_num_proc(0), m_num_excess(0),
-m_cf(10), m_target_time(0), m_delta(0), m_time_after_sleep(0), m_sum_diff(0), m_ref_ste_time(0ll){
+m_cf(10), m_target_time(0), m_delta(0), m_time_after_sleep(0), m_sum_diff(0), m_ref_time(0ll){
+	m_ref_time = steady_clock::now().time_since_epoch().count();
+	m_base_time = system_clock::now().time_since_epoch().count()*100;
+	time_t t = system_clock::to_time_t(system_clock::now());
+	cout << ctime(&t) << endl;
 }
 
-void Clock::init() {
-	unique_lock<mutex> lock(m_lock);
-}
-
-void Clock::set_system_time(long long t) {
-	m_ref_ste_time = t;
+void Clock::set_time(long long t) {
+	m_ref_time = steady_clock::now().time_since_epoch().count();
+	m_base_time = t;
 	for (list<Clock*>::iterator it = m_clocks.begin(); it != m_clocks.end(); it++) {
 		Clock * clock = (*it);
 		clock->lock();
-		clock->set_system_time(t);
+		clock->set_time(t);
 		clock->unlock();
 	}
 }
 
 void Clock::start() {
 	m_time_per_clock = static_cast<long long>(round(1.0e9 / m_cf));
-	m_ref_ste_time = get_steady_time();
-	m_target_time = m_time_after_sleep = get_steady_time();
+	m_target_time = m_time_after_sleep = get_time();
 }
 
 
@@ -46,7 +46,7 @@ void Clock::adjust() {
 	else
 		m_delta = 0;
 
-	long long time_before_sleep = get_steady_time();
+	long long time_before_sleep = get_time();
 
 	m_target_time += m_time_per_clock;
 
@@ -65,7 +65,7 @@ void Clock::adjust() {
 
 	sleep_for(nanoseconds(sleep_time));
 
-	m_time_after_sleep = get_steady_time();
+	m_time_after_sleep = get_time();
 
 #ifdef DEBUG_CLOCK
 	cout << "sleep time : " << sleep_time << endl;	
@@ -79,17 +79,14 @@ void Clock::adjust() {
 Clock* Clock::clone() {
 	Clock * clock = new Clock();
 	m_clocks.push_back(clock);
-	clock->set_system_time(get_system_time());
+	clock->set_time(get_time());
 	return clock;
 }
 
-long long Clock::get_steady_time() const{
-	return steady_clock::now().time_since_epoch().count() - m_ref_ste_time;
+long long Clock::get_time() const{
+	return steady_clock::now().time_since_epoch().count() - m_ref_time + m_base_time;
 }
 
-long long Clock::get_system_time(){
-	return get_steady_time();
-}
 
 long long Clock::get_time_per_clock() const {
 	return m_time_per_clock;

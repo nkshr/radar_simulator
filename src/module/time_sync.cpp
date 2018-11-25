@@ -18,27 +18,7 @@ char* type2str(char type) {
 	}
 }
 
-TimeSync::TimeSync() {
-
-}
-
-TimeSync::~TimeSync() {
-}
-
-bool TimeSync::init() {
-
-	return true;
-}
-
-bool TimeSync::process() {
-	return true;
-}
-
-bool TimeSync::finish() {
-	return true;
-}
-
-TimeSyncServer::TimeSyncServer() {
+TimeSyncServer::TimeSyncServer(Board * board) : Module(board){
 	register_bool("update", "update port number(default n)", false, &m_bupdate);
 	register_int("port", "port number for network time protocol.(default).", 9090, &m_port);
 
@@ -140,7 +120,7 @@ bool TimeSyncServer::finish() {
 	return true;
 }
 
-TimeSyncClient::TimeSyncClient() : Module() {
+TimeSyncClient::TimeSyncClient(Board * board) : Module(board) {
 	register_bool("update", "update port number(default n)", false, &m_bupdate);
 	register_int("port", "port number for network time protocol.(default).", 9090, &m_port);
 

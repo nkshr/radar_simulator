@@ -20,7 +20,7 @@ class Module;
 
 void foo(const char*s);
 
-typedef Module* (Board::*ModCreator)();
+typedef Module* (Board::*ModCreator)(Board * board);
 typedef map<const string, Module*> ModMap;
 typedef map<const string, ModCreator> ModCreatorMap;
 
@@ -67,7 +67,7 @@ private:
 	SOCKET m_myself_sock;
 
 	template<typename T>
-	Module* create_module();
+	Module* create_module(Board * board);
 
 	template<typename T>
 	Memory* create_memory();

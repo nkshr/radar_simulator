@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ctime>
+
 #include "module.hpp"
 
 using std::cout;
@@ -9,7 +11,7 @@ class RsimTest : public Module {
 protected:
 	bool m_bprint;
 public:
-	RsimTest() : Module(){
+	RsimTest(Board * board) : Module(board){
 		register_bool("print", "boolean value for printing time.(default y)", true, &m_bprint);
 	}
 
@@ -20,8 +22,9 @@ public:
 
 	virtual bool process() {
 
-		if (m_bprint)
-			cout << m_clock.get_steady_time() << endl;
+		if (m_bprint) {			
+			cout << get_time_by_string() << endl;
+		}
 		return true;
 	};
 

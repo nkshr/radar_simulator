@@ -16,20 +16,8 @@ struct TimeSyncPacket {
 	unsigned int checksum;
 };
 
-struct TimeSyncParam{
 
-};
-
-class TimeSync : public Module{
-public:
-	TimeSync();
-	~TimeSync();
-	virtual bool init();
-	virtual bool process();
-	virtual bool finish();
-};
-
-class TimeSyncServer : public  TimeSync{
+class TimeSyncServer : public  Module{
 private:	
 	bool m_bupdate;
 
@@ -40,7 +28,7 @@ private:
 	SOCKET m_sock;
 	
 public:
-	TimeSyncServer();
+	TimeSyncServer(Board * board);
 	~TimeSyncServer();
 	virtual bool init();
 	virtual bool process();
@@ -65,7 +53,7 @@ private:
 	list<OffsetAndDelay> m_oad_list;
 
 public:
-	TimeSyncClient();
+	TimeSyncClient(Board * board);
 	~TimeSyncClient();
 	virtual bool init();
 	virtual bool process();
