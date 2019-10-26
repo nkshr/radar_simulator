@@ -1,6 +1,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <lodepng/lodepng.h>
+
 #include "config.hpp"
 #include "miscel.hpp"
 
@@ -24,15 +26,6 @@ CMD str_to_cmd(const string& str) {
 
 	return CMD_INVALID;
 }
-//
-//string cmd_to_str(const Cmd& cmd) {
-//	for (int i = 0; i < Cmd::END; ++i) {
-//		if (static_cast<int>(cmd) == i) {
-//			return cmd_strs[i];
-//		}
-//	}
-//	return "";
-//}
 
 void split(const string &buf, const string& delims, vector<string>& toks) {
 	toks.clear();
@@ -59,73 +52,10 @@ void split(const string &buf, const string& delims, vector<string>& toks) {
 	}
 }
 
-//CmdServer::CmdServer() {
-//}
-//
-// bool CmdServer::init() {
-//	return m_udp.init();
-//}
-//
-//void CmdServer::set_server(const string& addr, int port) {
-//	m_udp.set_myself(addr, port);
-//}
-//
-//bool CmdServer::send_error(const string& msg) {
-//	if(m_udp._send_back(cmd_error_str.c_str(), cmd_error_str.size()) < 0)
-//		return false;
-//
-//	if (m_udp._send_back(msg.c_str(), msg.size()) < 0) {
-//		return false;
-//	}
-//	return true;
-//}
-//
-//bool CmdServer::send_success(const string& msg) {
-//	if (m_udp._send_back(cmd_success_str.c_str(), cmd_success_str.size()) != cmd_success_str.size())
-//		return false;
-//
-//	if (m_udp._send_back(msg.c_str(), msg.size()) != msg.size()) {
-//		return false;
-//	}
-//	return true;
-//}
-//
-//bool CmdServer::listen() {
-//	if (m_udp._receive(m_rmsg, sizeof(m_rmsg)) <= 0) {
-//		return false;
-//	}
-//	
-//	m_cp.parse(m_rmsg);
-//
-//	if (m_cp.cmd.empty()) {
-//		m_udp._send_back(cmd_error_str.c_str(), cmd_error_str.size());
-//		return false;
-//	}
-//
-//	return true;
-//}
-//
-//const string& CmdServer::get_cmd() const {
-//	return m_cp.cmd;
-//}
-//
-//const vector<string>& CmdServer::get_args() const {
-//	return m_cp.args;
-//}
-
-
 template <typename T>
 T* create_instance() {
 	return new T;
 }
-
-//Mutex::Mutex(mutex* lock) : m_lock(lock) {
-//	m_lock->lock();
-//}
-//
-//Mutex::~Mutex() {
-//	m_lock->unlock();
-//}
 
 string bool_to_str(bool status) {
 	string str;
@@ -160,14 +90,186 @@ bool str_to_bool(const string& str, bool& status) {
 	return sum - 1;
 }
 
- bool check_checksum(char* buf, int buf_size, int32_t checksum) {
-	 int32_t sum = 0;
-	 for (int i = 0; i < buf_size; ++i) {
-		 sum += (int32_t)buf[i];
-	 }
-	 sum -= 1;
-	 if (sum == checksum)
-		 return true;
-	 else
-		 return false;
- }
+bool check_checksum(char* buf, int buf_size, int32_t checksum) {
+	int32_t sum = 0;
+	for (int i = 0; i < buf_size; ++i) {
+		sum += (int32_t)buf[i];
+	}
+	sum -= 1;
+	if (sum == checksum)
+		return true;
+	else
+		return false;
+}
+
+char * load_text(const char *fname) {
+	FILE * pf = fopen(fname, "rb");
+	if (!pf) {
+		return NULL;
+	}
+
+	fseek(pf, 0, SEEK_END);
+	int size = ftell(pf);
+	rewind(pf);
+
+	char *txt = (char*)malloc(size + 1);
+	fread(txt, 1, size, pf);
+	txt[size] = '\0';
+	fclose(pf);
+	return txt;
+}
+ 
+
+int Image::get_width() {
+	return m_w;
+}
+
+int Image::get_height() {
+	return m_h;
+}
+
+int Image::get_depth() {
+	return m_d;
+}
+
+unsigned char* Image::get_pixels() {
+	return m_pixs;
+}
+
+Image::Image() : m_w(0), m_h(0), m_d(0), m_num_pixs(0), m_pixs(nullptr) {
+}
+
+Image::Image(unsigned width, unsigned height, unsigned depth,
+	unsigned char * pixs, long long time) : m_w(width), m_h(height), m_d(depth),
+	m_pixs(pixs), m_t(time) {
+	m_num_pixs = m_w * m_h * m_d;
+}
+
+Image::Image(Image & img) {
+	m_w = img.m_w;
+	m_h = img.m_h;
+	m_d = img.m_d;
+	m_t = img.m_t;
+	m_num_pixs = img.m_num_pixs;
+	m_pixs = img.m_pixs;
+}
+
+Image::~Image() {
+}
+
+Image Image::copy() {
+	Image img;
+	img.m_w = m_w;
+	img.m_h = m_h;
+	img.m_d = m_d;
+	img.m_t = m_t;
+	img.m_num_pixs = m_num_pixs;
+	
+	//img.m_pixs.reset(new unsigned char[m_num_pixs], default_delete<unsigned char[]>());
+
+	memcpy((void*)img.m_pixs, (void*)m_pixs, m_num_pixs);
+	return img;
+}
+
+bool Image::empty() {
+	if (m_num_pixs == 0)
+		return true;
+	else
+		return false;
+}
+
+long long Image::get_time() {
+	return m_t;
+}
+
+void Image::set_time(long long t) {
+	m_t = t;
+}
+
+void Image::destroy() {
+	delete [] m_pixs;
+	m_w = m_h = m_d = m_num_pixs = 0;
+}
+
+void Image::transpose() {
+	unsigned char * temp = new unsigned char [m_num_pixs];
+
+	for (unsigned i = 0; i < m_num_pixs; ++i) {
+		unsigned x = i % m_w;
+		unsigned y = i / m_w;
+		unsigned j = y + x * m_h;
+		temp[j] = m_pixs[i];
+	}
+
+	delete [] m_pixs;
+	m_pixs = temp;
+	int temp2 = m_w;
+	m_w = m_h;
+	m_h = m_w;
+}
+
+void  Image::reverse_rows() {
+	unsigned half_num_pixs = m_num_pixs / 2;
+	for (unsigned i = 0; i < half_num_pixs; ++i) {
+		unsigned x = i % m_w;
+		unsigned y = i / m_w;
+		unsigned j = x  + m_w *(m_h- y -1);
+		unsigned temp = m_pixs[j];
+		m_pixs[j] = m_pixs[i];
+		m_pixs[i] = temp;
+	}
+}
+
+void Image::reverse_cols() {
+	unsigned half_num_pixs = m_num_pixs / 2;
+	for (unsigned i = 0; i < half_num_pixs; ++i) {
+		unsigned x = i % m_w;
+		unsigned y = i / m_w;
+		unsigned j = m_w - x - 1 + m_w * y;
+		unsigned temp = m_pixs[j];
+		m_pixs[j] = m_pixs[i];
+		m_pixs[i] = temp;
+	}
+}
+
+Image& Image::operator=(Image & img) {
+	m_w = img.m_w;
+	m_h = img.m_h;
+	m_d = img.m_d;
+	m_t = img.m_t;
+	m_pixs = img.m_pixs;
+	return *this;
+}
+
+Image Image::move() {
+	Image img(*this);
+	*this = Image(0, 0, 0, nullptr, 0);
+	return img;
+}
+
+Image * imread(string &img_name) {
+	unsigned char * pixs;
+	unsigned w;
+	unsigned h;
+	unsigned d;
+	vector<unsigned char> p;
+	//unsigned error = lodepng_decode_file(&pixs, &w, &h, img_name.c_str(), LCT_GREY, 8);
+	unsigned error = lodepng::decode(p, w, h, img_name.c_str(), LCT_GREY,8);
+	//cout << p.size() << endl;
+	/*string wfname = img_name + "xxx.png";
+	error = lodepng::encode(wfname,p, w, h, LCT_GREY);*/
+	unsigned char * temp = new unsigned char[p.size()];
+	for (int i = 0; i < p.size(); ++i) {
+		temp[i] = p[i];
+	}
+	if (error) {
+		cerr << "Error : " << lodepng_error_text(error) << endl;
+		return nullptr;
+	}
+	else {
+		d = 1;
+	}
+
+	Image * img = new Image(w, h, d, temp);
+	return img;
+}

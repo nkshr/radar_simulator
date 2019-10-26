@@ -30,7 +30,7 @@ TimeSyncServer::TimeSyncServer(Board * board) : Module(board){
 TimeSyncServer::~TimeSyncServer() {
 
 }
-bool TimeSyncServer::init() {
+bool TimeSyncServer::init_process() {
 	m_sock = socket(m_server.sin_family, SOCK_DGRAM, 0);
 	if (m_sock == INVALID_SOCKET) {
 		cerr << "Socket creation error : " << WSAGetLastError() << endl;
@@ -49,7 +49,7 @@ bool TimeSyncServer::init() {
 	return true;
 }
 
-bool TimeSyncServer::process() {
+bool TimeSyncServer::main_process() {
 	if (m_bupdate) {
 		int res = bind(m_sock, (sockaddr*)&m_server, sizeof(m_server));
 		if (res == SOCKET_ERROR) {
@@ -116,7 +116,7 @@ bool TimeSyncServer::process() {
 	return true;
 }
 
-bool TimeSyncServer::finish() {
+bool TimeSyncServer::finish_process() {
 	return true;
 }
 
@@ -133,7 +133,7 @@ TimeSyncClient::TimeSyncClient(Board * board) : Module(board) {
 TimeSyncClient::~TimeSyncClient() {
 }
 
-bool TimeSyncClient::init() {
+bool TimeSyncClient::init_process() {
 	m_sock = socket(m_server.sin_family, SOCK_DGRAM, IPPROTO_UDP);
 	if (m_sock == INVALID_SOCKET) {
 		cerr << "Socket creation error : " << WSAGetLastError() << endl;
@@ -145,7 +145,7 @@ bool TimeSyncClient::init() {
 	return true;
 }
 
-bool TimeSyncClient::process() {
+bool TimeSyncClient::main_process() {
 	long long t0;//client's timestamp of the request packet transmission
 	long long t1;//server's timestamp of the request packet reception
 	long long t2;//server's timestamp of the response packet transmission
@@ -195,6 +195,6 @@ bool TimeSyncClient::process() {
 	return  true;
 }
 
-bool TimeSyncClient::finish() {
+bool TimeSyncClient::finish_process() {
 	return true;
 }

@@ -30,9 +30,9 @@ private:
 public:
 	TimeSyncServer(Board * board);
 	~TimeSyncServer();
-	virtual bool init();
-	virtual bool process();
-	virtual bool finish();
+	virtual bool init_process();
+	virtual bool main_process();
+	virtual bool finish_process();
 
 };
 
@@ -55,7 +55,7 @@ private:
 public:
 	TimeSyncClient(Board * board);
 	~TimeSyncClient();
-	virtual bool init();
-	virtual bool process();
-	virtual bool finish();
+	virtual bool init_process();
+	virtual bool main_process();
+	virtual bool finish_process();
 };

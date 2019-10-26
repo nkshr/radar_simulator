@@ -6,8 +6,6 @@
 
 #include <WinSock2.h>
 
-#pragma comment(lib, "ws2_32.lib")
-
 #include "module/module.hpp"
 #include "common/miscel.hpp"
 
@@ -17,17 +15,16 @@
 
 #include "module/rsim_test.hpp"
 #include "module/time_sync.hpp"
+#include "module/glfw_window.hpp"
+#include "module/image_reader.hpp";
 
-using std::cout;
-using std::cerr;
-using std::endl;
-using std::vector;
-using std::map;
-using std::string;
-using std::pair;
+using namespace std;
+using namespace std::this_thread;
+using namespace std::chrono;
 
 
-Board::Board() :m_brun(true), m_bdebug(true) {
+SubProcess::SubProcess(Board * board):m_board(board), m_recv_msg_size(sizeof(m_recv_msg)),
+m_bfinish(false){
 	memset(&m_myself, 0, sizeof(m_myself));
 	m_myself.sin_family = AF_INET;
 	m_myself.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -36,8 +33,12 @@ Board::Board() :m_brun(true), m_bdebug(true) {
 	register_module<TimeSyncServer>("time_sync_server");
 	register_module<TimeSyncClient>("time_sync_client");
 	register_module<RsimTest>("rsim_test");
+	register_module<GLFWWindow>("window");
+	register_module<ImageReader>("image_reader");
+	register_module<SLAMViewer>("slam_viewer");
 
 	register_memory<MemBool>("bool");
+	register_memory<MemImage>("image");
 
 	//relate command to proccess.
 	register_cmd_proc<CmdLsMod>("lsmod");
@@ -55,46 +56,111 @@ Board::Board() :m_brun(true), m_bdebug(true) {
 	register_cmd_proc<CmdStop>("stop");
 }
 
-bool Board::init() {
-	//if(!m_cmd_server.init())
-	//	return false;
-
-	//register_module<Simulator>("simulator");
-
-	return true;
-}
-
-bool Board::init_all() {
-
-	return true;
-}
-
-void Board::run() {
+bool SubProcess::init() {
 	WSADATA wsa;
 	if (WSAStartup(WINSOCK_VERSION, &wsa) != 0) {
 		cerr << " Windows Socket initialization error : " << WSAGetLastError() << endl;
-		return;
+		return false;
 	}
 
-	char recv_msg[1024];
-	int recv_msg_size = sizeof(recv_msg);
 
 	m_myself_sock = socket(m_myself.sin_family, SOCK_STREAM, 0);
 	if (m_myself_sock == INVALID_SOCKET) {
 		cerr << "Socket creation error : " << WSAGetLastError() << endl;
 		closesocket(m_myself_sock);
 		WSACleanup();
-		return;
+		return false;
 	}
 
-	int res = bind(m_myself_sock, (sockaddr*)&m_myself, sizeof(m_myself));
+	int res = ::bind(m_myself_sock, (sockaddr*)&m_myself, sizeof(m_myself));
 	if (res == SOCKET_ERROR) {
 		cerr << "bind failed with error : " << WSAGetLastError() << endl;
-		return;
+		return false;
 	}
 
-	while (m_brun) {
-		res = listen(m_myself_sock, SOMAXCONN);
+	return true;
+}
+
+
+bool SubProcess::set_data(const string& mname, const string& pname, const string& data) {
+	ModMap::iterator mm_it = m_modules.find(mname);
+	if (mm_it == m_modules.end()) {
+		return false;
+	}
+
+	Module* module = mm_it->second;
+	return module->set_data(pname, data);
+}
+
+bool SubProcess::get_data(const string& mname, const string& pname, string& data) {
+	ModMap::iterator mm_it = m_modules.find(mname);
+	if (mm_it == m_modules.end()) {
+		return false;
+	}
+
+	Module* module = mm_it->second;
+	return module->get_data(pname, data);
+}
+
+
+bool SubProcess::create_module(const string& type, const string& name) {
+	for (ModCreatorMap::iterator it = m_mod_creators.begin(); it != m_mod_creators.end(); ++it) {
+		if (it->first == type) {
+			Module* m = (this->*(it->second))(m_board);
+			m_modules.insert(pair<const string, Module*>(name, m));
+			return true;
+		}
+	}
+	return false;
+}
+
+template <typename T>
+Module* SubProcess::create_module(Board * board){
+	return dynamic_cast<Module*>(new T(board));
+}
+
+bool SubProcess::create_memory(const string& type, const string& name) {
+	for (MemCreatorMap::iterator it = m_mem_creators.begin(); it != m_mem_creators.end(); ++it) {
+		if (it->first == type) {
+			Memory* m = (this->*(it->second))();
+			m_memories.insert(pair<const string, Memory*>(name, m));
+			return true;
+		}
+	}
+	return false;
+}
+
+template <typename T>
+Memory* SubProcess::create_memory() {
+	return dynamic_cast<Memory*>(new T);
+}
+
+template <typename T>
+void SubProcess::register_module(const string& type) {
+	m_mod_creators.insert(pair<const string, ModCreator>(type, &SubProcess::create_module<T>));
+}
+
+template <typename T>
+void SubProcess::register_memory(const string& type) {
+	m_mem_creators.insert(pair<const string, MemCreator>(type, &SubProcess::create_memory<T>));
+}
+
+void foo(const char* s) {}
+
+template <typename T>
+void SubProcess::register_cmd_proc(const string& name) {
+	CmdProcess* cmd_proc = dynamic_cast<CmdProcess*>(new T(this));
+	m_cmd_procs.insert(pair<string, CmdProcess*>(name, cmd_proc));
+}
+
+void SubProcess::process() {
+	while (true) {
+		lock_guard<mutex> lock(m_lock);
+
+		if (m_bfinish)
+			break;
+
+		int	res = listen(m_myself_sock, SOMAXCONN);
 		if (res == SOCKET_ERROR) {
 			cerr << "listen failed with error : " << WSAGetLastError() << endl;
 			break;
@@ -106,16 +172,16 @@ void Board::run() {
 			break;
 		}
 
-		res = recv(target_sock, recv_msg, recv_msg_size, 0);
+		res = recv(target_sock, m_recv_msg, m_recv_msg_size, 0);
 		if (res == SOCKET_ERROR) {
 			cerr << "recv failed with error : " << WSAGetLastError() << endl;
 			break;
 		}
 
-		cout << recv_msg << " received." << endl;
+		cout << m_recv_msg << " was received." << endl;
 
 		vector<string> toks;
-		split(recv_msg, " \n", toks);
+		split(m_recv_msg, " \n", toks);
 
 
 		string cmd;
@@ -136,7 +202,7 @@ void Board::run() {
 		CmdProcMap::iterator it = m_cmd_procs.find(cmd);
 		bool cmd_result;
 		if (it == m_cmd_procs.end()) {
-			msg = "Invalid command " + cmd + " received.";
+			msg = "Invalid command " + cmd + " was received.";
 			cmd_result = false;
 		}
 		else {
@@ -167,136 +233,66 @@ void Board::run() {
 	WSACleanup();
 }
 
-bool Board::run_module(const string& name) {
-	for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
-		if (it->first == name) {
-			it->second->run();
-			return true;
-		}
-	}
-
-	return false;
-}
-void Board::run_all_modules() {
-	for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
-		it->second->run();
-	}
+Board::Board() :m_sub_proc(this) , m_bfinish_main(false){
 }
 
-void Board::stop_all_modules() {
-	for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
-		it->second->stop();
-	}
-}
-
-bool Board::stop_module(const string& name) {
-	for (ModMap::iterator it = m_modules.begin(); it != m_modules.end(); ++it) {
-		if (it->first == name) {
-			it->second->stop();
-			return true;
-		}
-	}
-	return false;
-}
-
-void Board::finish() {
-	stop_all_modules();
-	m_brun = false;
-}
-
-void Board::lock() {
-	m_lock.lock();
-}
-
-void Board::unlock() {
-	m_lock.unlock();
-}
-
-bool Board::set_data(const string& mname, const string& pname, const string& data) {
-	ModMap::iterator mm_it = m_modules.find(mname);
-	if (mm_it == m_modules.end()) {
+bool Board::init() {
+	if (!m_sub_proc.init())
 		return false;
-	}
 
-	Module* module = mm_it->second;
-	return module->set_data(pname, data);
-}
-
-bool Board::get_data(const string& mname, const string& pname, string& data) {
-	ModMap::iterator mm_it = m_modules.find(mname);
-	if (mm_it == m_modules.end()) {
-		return false;
-	}
-
-	Module* module = mm_it->second;
-	return module->get_data(pname, data);
-}
-
-
-bool Board::create_module(const string& type, const string& name) {
-	for (ModCreatorMap::iterator it = m_mod_creators.begin(); it != m_mod_creators.end(); ++it) {
-		if (it->first == type) {
-			Module* m = (this->*(it->second))(this);
-			m_modules.insert(pair<const string, Module*>(name, m));
-			return true;
-		}
-	}
-	return false;
-}
-
-template <typename T>
-Module* Board::create_module(Board * board){
-	return dynamic_cast<Module*>(new T(board));
-}
-
-bool Board::create_memory(const string& type, const string& name) {
-	for (MemCreatorMap::iterator it = m_mem_creators.begin(); it != m_mem_creators.end(); ++it) {
-		if (it->first == type) {
-			Memory* m = (this->*(it->second))();
-			m_memories.insert(pair<const string, Memory*>(name, m));
-			return true;
-		}
-	}
-	return false;
-}
-
-template <typename T>
-Memory* Board::create_memory() {
-	return dynamic_cast<Memory*>(new T);
-}
-
-template <typename T>
-void Board::register_module(const string& type) {
-	m_mod_creators.insert(pair<const string, ModCreator>(type, &Board::create_module<T>));
-}
-
-template <typename T>
-void Board::register_memory(const string& type) {
-	m_mem_creators.insert(pair<const string, MemCreator>(type, &Board::create_memory<T>));
-}
-
-void foo(const char* s) {}
-
-bool Board::connect(const string& out_mod_name , const string& out_port_name,
-	const string& in_mod_name, const string& in_port_name) {
 	return true;
 }
 
-template <typename T>
-void Board::register_cmd_proc(const string& name) {
-	CmdProcess* cmd_proc = dynamic_cast<CmdProcess*>(new T(this));
-	m_cmd_procs.insert(pair<string, CmdProcess*>(name, cmd_proc));
+void Board::finish() {
 }
 
+mutex& Board::get_lock_print() {
+	return m_lock_print;
+}
+
+
+void Board::run() {
+	thread th = thread(&SubProcess::process, &m_sub_proc);
+	main_process();
+	th.join();
+}
+
+void Board::finish_main_proc() {
+	lock_guard<mutex> lock(m_lock);
+	m_bfinish_main = true;
+}
+
+void Board::main_process() {
+	while (true) {
+		long long sleep_time;
+		{
+			lock_guard<mutex> lock(m_lock);
+			if (m_bfinish_main)
+				break;
+			//////////////////////////////////////////
+			/*Processes are written, here which must be in main thread.*/
+
+
+			//////////////////////////////////////////
+			m_clock.update();
+			sleep_time = m_clock.get_sleep_time();
+		}
+
+		sleep_for(nanoseconds(sleep_time));
+	}
+}
 void Board::set_time(long long t) {
+	lock_guard<mutex> lock(m_lock);
 	m_clock.set_time(t);
-	
+
 }
 
 long long Board::get_time() {
+	lock_guard<mutex> lock(m_lock);
 	return m_clock.get_time();
 }
 
 Clock * Board::get_clock() {
+	lock_guard<mutex> lock(m_lock);
 	return m_clock.clone();
 }

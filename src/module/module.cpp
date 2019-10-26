@@ -4,51 +4,148 @@
 #include "module.hpp"
 
 using namespace std;
+using namespace std::chrono;
+using namespace std::this_thread;
+
 
 template class function<double()>;
 template class function<void(double)>;
+static unsigned module_id = 0;
 
-Module::Module(Board * board) : m_board(board),  m_brun(true), m_bdebug(false), m_status(Module::STATUS::CREATED) {
-	m_board->lock();
+#define FLAG_TURNED_ON 1
+#define FLAG_INITIALIZED 2
+#define FLAG_FINISHED 4
+
+
+Module::Module(Board * board) : m_board(board), m_bdebug(false),
+m_command(STOP), m_status(0x00),
+m_module_id(module_id++){
 	m_clock = m_board->get_clock();
-	m_board->unlock();
 	register_bool("debug", "debug flag(default no).", false, &m_bdebug);
-	register_double_callback("cf", "clock frequency(default 10.0).",
+
+	/*register_double_callback("cf", "clock frequency(default 10.0).",
 		[&](double cf) {m_clock->set_clock_freq(cf); return true; },
-		[&]() {return m_clock->get_clock_freq(); });
+		[&]() {return m_clock->get_clock_freq(); });*/
+
+	PortSetCallback psc_cf = [&](const string& cf) {m_clock->set_clock_freq(stod(cf)); return true; };
+	PortGetCallback pgc_cf = [&]() {return to_string(m_clock->get_clock_freq()); };
+	register_callback("cf", "clock frequency(default 10.0)",
+		psc_cf, pgc_cf);
+
+}
+
+void Module::init() {
+	lock_guard<mutex> lock(m_lock);
+	m_command = Module::COMMAND::INIT;
 }
 
 void Module::run() {
-	m_th = thread(&Module::processing_loop, this);
-
+	lock_guard<mutex> lock(m_lock);
+	m_command = Module::COMMAND::RUN;
 }
 
-void Module::join() {
+void Module::turn_on() {
+	lock_guard<mutex> lock(m_lock);
+	m_th = thread(&Module::processing_loop, this);
+	m_status |= FLAG_TURNED_ON;
+}
+
+void Module::turn_off() {
+	unique_lock<mutex> lock(m_lock);
+	m_command = TURN_OFF;
+	lock.unlock();
+
 	m_th.join();
+	m_status = m_status & ~FLAG_TURNED_ON;
+}
+
+void Module::finish() {
+	unique_lock<mutex> lock(m_lock);
+	m_command = Module::COMMAND::FINISH;
 }
 
 void Module::processing_loop() {
+	unique_lock<mutex> lock(m_lock);
 	m_clock->start();
+	lock.unlock();
 
 	while (true) {
-
+		long long sleep_time;
 		{
-			unique_lock<mutex> lock(m_lock);
-			if (!(process() && m_brun))
+			unique_lock<mutex> _lock(m_lock);
+			
+			switch (m_command) {
+			case Module::COMMAND::INIT:
+				if(init_process())
+					m_status |= FLAG_INITIALIZED;
+				m_cv.notify_one();
+				m_command = Module::COMMAND::STOP;
 				break;
+			case Module::COMMAND::RUN:
+				if (m_status & FLAG_INITIALIZED) {
+					if (!main_process())
+						m_command = Module::COMMAND::STOP;
+				}
+				break;
+			case Module::COMMAND::STOP:
+				break;
+			case Module::COMMAND::FINISH:
+				if (finish_process())
+					m_status |= FLAG_FINISHED;
+
+				m_command = Module::COMMAND::STOP;
+				m_cv.notify_one();
+				break;
+			case Module::COMMAND::TURN_OFF:
+				return;
+			};
+
+			m_clock->update();
+			sleep_time = m_clock->get_sleep_time();
 		}
 
-		m_clock->adjust();
+		sleep_for(nanoseconds(sleep_time));
 	}
-
-	m_clock->stop();
 }
 
 void Module::stop() {
 	unique_lock<mutex>(m_lock);
-	m_brun = false;
+	m_command = Module::COMMAND::STOP;
 }
 
+void Module::wait_init_reply() {
+	unique_lock<mutex> lock(m_lock);
+	m_cv.wait(lock, [&] {return !(m_command == Module::COMMAND::INIT); });
+}
+
+void Module::wait_finish_reply() {
+	unique_lock<mutex> lock(m_lock);
+	m_cv.wait(lock, [&] {return !(m_command == Module::COMMAND::FINISH); });
+}
+
+bool Module::get_init_status() {
+	lock_guard<mutex> lock(m_lock);
+	return m_status & FLAG_INITIALIZED;
+}
+
+bool Module::get_finish_status() {
+	lock_guard<mutex> lock(m_lock);
+	return m_status & FLAG_FINISHED;
+}
+
+bool Module::get_main_sw_status() {
+	lock_guard<mutex> lock(m_lock);
+	return m_status & FLAG_TURNED_ON;
+}
+
+unsigned Module::get_id() {
+	return m_module_id;
+}
+
+void Module::print(const string& str) {
+	lock_guard<mutex> lock(m_board->get_lock_print());
+	cout << str;
+}
 
 void Module::register_bool(const string& name, const  string& disc,
 	bool init_status, bool* status) {
@@ -116,8 +213,8 @@ void Module::register_bool_callback(const string& name, const string& disc,
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
-	port->sc.b = new BoolSetCallback(bsc);
-	port->gc.b = new BoolGetCallback(bgc);
+	port->bsc = bsc;
+	port->bgc = bgc;
 	port->type = Port::TYPE::BOOL_CALLBACK;
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
@@ -127,8 +224,8 @@ void Module::register_int_callback(const string& name, const string& disc,
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
-	port->sc.i = new IntSetCallback(isc);
-	port->gc.i = new IntGetCallback(igc);
+	port->isc = isc;
+	port->igc = igc;
 	port->type = Port::TYPE::INT_CALLBACK;
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
@@ -138,8 +235,8 @@ void Module::register_double_callback(const string& name, const string& disc,
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
-	port->sc.d = new DoubleSetCallback(dsc);
-	port->gc.d = new DoubleGetCallback(dgc);
+	port->dsc = dsc;
+	port->dgc = dgc;
 	port->type = Port::TYPE::DOUBLE_CALLBACK;
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
@@ -149,17 +246,23 @@ void Module::register_string_callback(const string& name, const string& disc,
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
-	port->sc.s = new StringSetCallback(ssc);
-	port->gc.s = new StringGetCallback(sgc);
+	port->ssc = ssc;
+	port->sgc = sgc;
 	port->type = Port::TYPE::STRING_CALLBACK;
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
 
+void Module::register_callback(const string& name, const string& disc,
+	PortSetCallback psc, PortGetCallback pgc) {
+	Port* port = new Port;
+	port->name = name;
+	port->disc = disc;
+	port->psc = psc;
+	port->pgc = pgc;
+	port->type = Port::TYPE::CALLBACK_FUNC;
+	m_ports.insert(pair<const string, Port*>(port->name, port));
+}
 
-
-//Port* Module::get_port(const string& name) {
-//	return m_ports[name];
-//}
 
 bool Module::connect_memory(Memory* memory, const string& port_name) {
 	unique_lock<mutex> lock(m_lock);
@@ -207,21 +310,23 @@ bool Module::set_data(const string& name, const string& data) {
 		return true;
 	case Port::TYPE::BOOL_CALLBACK:
 		if ("yes" == data || "y" == data) {
-			(*port->sc.b)(true);
+			(port->bsc)(true);
 		}
 		else if ("no" == data || "n" == data) {
-			(*port->sc.b)(false);
+			(port->bsc)(false);
 		}
 		else {
 			return false;
 		}
 		return true;
 	case Port::TYPE::INT_CALLBACK:
-		return (*port->sc.i)(stoi(data));
+		return (port->isc)(stoi(data));
 	case  Port::TYPE::DOUBLE_CALLBACK:
-		return (*port->sc.d)(stod(data));
+		return (port->dsc)(stod(data));
 	case Port::TYPE::STRING_CALLBACK:
-		return (*port->sc.s)(data);
+		return (port->ssc)(data);
+	case Port::TYPE::CALLBACK_FUNC:
+		return port->psc(data);
 	default:
 		return false;
 	}
@@ -249,16 +354,19 @@ bool Module::get_data(const string& name, string& data) {
 		data = (*port->data.s);
 		return true;
 	case Port::TYPE::BOOL_CALLBACK:
-		data = bool_to_str((*port->gc.b)());
+		data = bool_to_str((port->bgc)());
 		return true;
 	case Port::TYPE::INT_CALLBACK:
-		data = to_string((*port->gc.i)());
+		data = to_string((port->igc)());
 		return true;
 	case Port::TYPE::DOUBLE_CALLBACK:
-		data = to_string((*port->gc.d)());
+		data = to_string((port->dgc)());
 		return true;
 	case Port::TYPE::STRING_CALLBACK:
-		data = (*port->gc.s)();
+		data = (port->sgc)();
+		return true;
+	case Port::TYPE::CALLBACK_FUNC:
+		data = (port->pgc)();
 		return true;
 	default:
 		return false;
@@ -283,14 +391,6 @@ void Module::unlock() {
 	m_lock.unlock();
 }
 
-Module::STATUS Module::get_status() {
-	return m_status;
-}
-
-void Module::set_status(STATUS status) {
-	m_status = status;
-}
-
 void Module::set_time(long long t) {
 	//m_board->lock();
 	//m_board->set_time(t);
@@ -303,6 +403,8 @@ long long Module::get_time() {
 
 string Module::get_time_by_string() {
 	time_t tt(get_time()/1000000000);
+
+	//rewrite convertion of from time to string with strftime.
 	string str(ctime(&tt));
 	return str;
 }

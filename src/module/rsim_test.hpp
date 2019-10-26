@@ -6,6 +6,7 @@
 
 using std::cout;
 using std::endl;
+using std::to_string;
 
 class RsimTest : public Module {
 protected:
@@ -15,21 +16,22 @@ public:
 		register_bool("print", "boolean value for printing time.(default y)", true, &m_bprint);
 	}
 
-	virtual bool init() {
-		debug_msg dmsg("init");
+	virtual bool init_process() {
+		print(to_string(get_id()) + " : init_process is runnning.\n");
 		return true;
 	};
 
-	virtual bool process() {
+	virtual bool main_process() {
 
 		if (m_bprint) {			
-			cout << get_time_by_string() << endl;
+			string str =  to_string(get_id()) + ": " + get_time_by_string();
+			print(str);
 		}
 		return true;
 	};
 
-	virtual bool finish() {
-		debug_msg dmsg("finish");
+	virtual bool finish_process() {
+		print(to_string(get_id()) + " : finish_process is running.\n");
 		return true;
 	};
 

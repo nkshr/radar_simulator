@@ -22,7 +22,8 @@ public:
 
 	void start();
 	void stop();
-	void adjust();
+	void update();
+	long long get_sleep_time();
 	
 	long long get_time() const;
 	long long get_time_per_clock() const;
@@ -47,13 +48,14 @@ private:
 	long long m_time_per_clock;
 	long long m_target_time;
 	long long m_delta;
-	long long m_time_after_sleep;
+	//long long m_time_after_sleep;
 	long long m_sum_diff;
 
 	double m_proc_rate;
 
 	long long m_ref_time;
 	long long m_base_time;
+	long long m_sleep_time;
 
 	mutex m_lock;
 
