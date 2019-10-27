@@ -4,6 +4,9 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <utility>
+#include <functional>
+#include <map>
 
 #include <WinSock2.h>
 
@@ -15,6 +18,8 @@ using std::cerr;
 using std::endl;
 using std::shared_ptr;
 using std::mutex;
+using std::make_pair;
+using std::map;
 
 const static string cmd_err_str = "err";
 const static string cmd_suc_str = "suc";
@@ -127,14 +132,17 @@ public:
 
 Image * imread(string &img_name);
 
-const static string img_format_strs[] = {
-	"rgb",
-	"rgba",
-	"gray"
-};
 
 enum IMG_FORMAT {
 	IFMT_RGB,
 	IFMT_RGBA,
 	IFMT_GRAY,
 };
+
+const static map<string, IMG_FORMAT> img_format_map {
+	make_pair("rgb", IFMT_RGB),
+	make_pair("rgba", IFMT_RGBA),
+	make_pair("gray", IFMT_GRAY)
+};
+
+string to_time_string(long long t);

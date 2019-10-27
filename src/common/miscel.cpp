@@ -221,14 +221,16 @@ void  Image::reverse_rows() {
 }
 
 void Image::reverse_cols() {
-	unsigned half_num_pixs = m_num_pixs / 2;
-	for (unsigned i = 0; i < half_num_pixs; ++i) {
+	unsigned half_width = m_w / 2;
+	for (unsigned i = 0; i < m_num_pixs; ++i) {
 		unsigned x = i % m_w;
-		unsigned y = i / m_w;
-		unsigned j = m_w - x - 1 + m_w * y;
-		unsigned temp = m_pixs[j];
-		m_pixs[j] = m_pixs[i];
-		m_pixs[i] = temp;
+		if (x < half_width) {
+			unsigned y = i / m_w;
+			unsigned j = m_w - x - 1 + m_w * y;
+			unsigned temp = m_pixs[j];
+			m_pixs[j] = m_pixs[i];
+			m_pixs[i] = temp;
+		}
 	}
 }
 
@@ -272,4 +274,14 @@ Image * imread(string &img_name) {
 
 	Image * img = new Image(w, h, d, temp);
 	return img;
+}
+
+mutex lock_time;
+string to_time_string(long long t) {
+	lock_guard<mutex> lock(lock_time);
+
+	time_t tt(t / 1000000000);
+	string str(ctime(&tt));
+	str[str.size()-1] = '\0';
+	return str;
 }

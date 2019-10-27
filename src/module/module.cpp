@@ -401,10 +401,6 @@ long long Module::get_time() {
 	return m_clock->get_time();
 }
 
-string Module::get_time_by_string() {
-	time_t tt(get_time()/1000000000);
-
-	//rewrite convertion of from time to string with strftime.
-	string str(ctime(&tt));
-	return str;
+string Module::get_time_as_string() {
+	return to_time_string(get_time());
 }

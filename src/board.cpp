@@ -233,7 +233,8 @@ void SubProcess::process() {
 	WSACleanup();
 }
 
-Board::Board() :m_sub_proc(this) , m_bfinish_main(false){
+Board::Board() : m_cf(1.0), m_sub_proc(this) , m_bfinish_main(false){
+	m_clock.set_clock_freq(m_cf);
 }
 
 bool Board::init() {
@@ -263,6 +264,10 @@ void Board::finish_main_proc() {
 }
 
 void Board::main_process() {
+	unique_lock<mutex> _lock(m_lock);
+	m_clock.start();
+	_lock.unlock();
+
 	while (true) {
 		long long sleep_time;
 		{
@@ -276,6 +281,9 @@ void Board::main_process() {
 			//////////////////////////////////////////
 			m_clock.update();
 			sleep_time = m_clock.get_sleep_time();
+
+			lock_guard<mutex> lock_print(m_lock_print);
+			cout << "Board clock : " << to_time_string(m_clock.get_time()) << endl;
 		}
 
 		sleep_for(nanoseconds(sleep_time));

@@ -24,7 +24,7 @@ public:
 	virtual bool main_process() {
 
 		if (m_bprint) {			
-			string str =  to_string(get_id()) + ": " + get_time_by_string();
+			string str =  to_string(get_id()) + ": " + get_time_as_string();
 			print(str);
 		}
 		return true;

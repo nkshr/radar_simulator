@@ -73,10 +73,6 @@ struct Port {
 	StringGetCallback sgc;
 };
 
-struct SignalPort : public Port {
-
-};
-
 typedef map<const string, Port*> PortMap;
 
 class Module {
@@ -192,7 +188,7 @@ protected:
 	
 	long long get_time();
 
-	string get_time_by_string();
+	string get_time_as_string();
 private:
 	mutex m_lock;
 };

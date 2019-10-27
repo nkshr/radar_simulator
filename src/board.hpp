@@ -241,23 +241,7 @@ public:
 
 	void process();
 
-	//bool init_all();
-
-	//bool run_module(const string& vname);
-	//void run_all_modules();
-	//
-	////void run(const vector<char*>& vertetxes);
-
-	//void stop_all_modules();
-	//bool stop_module(const string& name);
-
 	void finish();
-
-	
-	//Functions below is thread-safe.
-	//Clock* get_clock();
-
-	//mutex& get_lock_clock();
 };
 
 class Board {
@@ -294,4 +278,5 @@ private:
 	SubProcess m_sub_proc;
 	void main_process();
 
+	double m_cf;
 };
