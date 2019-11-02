@@ -31,49 +31,29 @@ typedef function<int()> IntGetCallback;
 typedef function<double()> DoubleGetCallback;
 typedef function<string()> StringGetCallback;
 
-struct Port {
-	enum TYPE {
-		BOOL,
-		INT,
-		DOUBLE,
-		STRING,
-		MEMORY,
-		BOOL_CALLBACK,
-		INT_CALLBACK,
-		DOUBLE_CALLBACK,
-		STRING_CALLBACK,
-		CALLBACK_FUNC,
-		TYPE_END
-	};
+template <typename T>
+using SetCallback = function<T(T)>;
 
+template <typename T>
+T smpl_sc(T val);
+
+template <typename T>
+string smpl_gc(T val);
+
+struct PortBase {
 	string name;
 	string disc;
-
-	union Data {
-		bool* b;
-		int* i;
-		double* d;
-		string* s;
-	}data;
-	
-	Memory** mem;
-
-	Port::TYPE type;
-	
-	PortSetCallback psc;
-	BoolSetCallback bsc;
-	IntSetCallback isc;
-	DoubleSetCallback dsc;
-	StringSetCallback ssc;
-	
-	PortGetCallback pgc;
-	BoolGetCallback bgc;
-	IntGetCallback igc;
-	DoubleGetCallback dgc;
-	StringGetCallback sgc;
+	bool is_enum;
 };
 
-typedef map<const string, Port*> PortMap;
+template <typename T>
+struct Port : PortBase {
+	T *  pval;
+	SecCallback<T> sc;
+	vector<string> strs;
+};
+
+typedef map<const string, PortBase*> PortMap;
 
 class Module {
 public:
@@ -159,30 +139,34 @@ protected:
 		return true;
 	};
 
-	void register_bool(const string& name, const string& disc,
-		bool init_status, bool* status);
-	void register_int(const string& name, const string& disc,
-		int init_val, int* val);
-	void register_double(const string& name, const string& disc,
-		double init_val, double* val);
-	void register_string(const string& name, const string& disc,
-		string init_str, string* str);
-	void register_memory(const string& name, const string& disc,
-		Memory** mem);
+	template <typename T>
+	void register_port(const string & name, const string & disc,
+		T init_val, T * pval);
+
+	//void register_bool(const string& name, const string& disc,
+	//	bool init_status, bool* status);
+	//void register_int(const string& name, const string& disc,
+	//	int init_val, int* val);
+	//void register_double(const string& name, const string& disc,
+	//	double init_val, double* val);
+	//void register_string(const string& name, const string& disc,
+	//	string init_str, string* str);
+	//void register_memory(const string& name, const string& disc,
+	//	Memory** mem);
 
 ///////////Remove after few week/////////////////	
-	void register_bool_callback(const string& name, const string& disc,
-		BoolSetCallback bsc, BoolGetCallback bgc);
-	void register_int_callback(const string& name, const string& disc,
-		IntSetCallback isc, IntGetCallback igc);
-	void register_double_callback(const string& name, const string& disc,
-		DoubleSetCallback isc, DoubleGetCallback dgc);
-	void register_string_callback(const string& name, const string& disc,
-		StringSetCallback ssc, StringGetCallback sgc);
+	//void register_bool_callback(const string& name, const string& disc,
+	//	BoolSetCallback bsc, BoolGetCallback bgc);
+	//void register_int_callback(const string& name, const string& disc,
+	//	IntSetCallback isc, IntGetCallback igc);
+	//void register_double_callback(const string& name, const string& disc,
+	//	DoubleSetCallback isc, DoubleGetCallback dgc);
+	//void register_string_callback(const string& name, const string& disc,
+	//	StringSetCallback ssc, StringGetCallback sgc);
 //////////////////////////////////////////////////
 
-	void register_callback(const string& name, const string& disc,
-		PortSetCallback psc, PortGetCallback pgc);
+	//void register_callback(const string& name, const string& disc,
+	//	PortSetCallback psc, PortGetCallback pgc);
 
 	void set_time(long long t);
 	

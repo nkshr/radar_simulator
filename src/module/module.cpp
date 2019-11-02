@@ -16,6 +16,12 @@ static unsigned module_id = 0;
 #define FLAG_INITIALIZED 2
 #define FLAG_FINISHED 4
 
+template <typename T>
+T smpl_sc(T val) {
+	return va;
+}
+
+
 
 Module::Module(Board * board) : m_board(board), m_bdebug(false),
 m_command(STOP), m_status(0x00),
@@ -147,121 +153,133 @@ void Module::print(const string& str) {
 	cout << str;
 }
 
-void Module::register_bool(const string& name, const  string& disc,
-	bool init_status, bool* status) {
-	Port* port = new Port;
+template <typename T>
+void Module::register_port(const string & name const string & disc,
+	T init_val, T * pval) {
+	Port * port = new Port<T>;
 	port->name = name;
 	port->disc = disc;
-	port->type = Port::TYPE::BOOL;
+	port->pval = pval;
+	*pval = init_val;
 
-	*status = init_status;
-	port->data.b = status;
-	
-	m_ports.insert(pair<const string, Port*>(port->name, port));
+	m_ports.insert(pair<const string, PortBase*>(port->name, port));
 }
+//
+//void Module::register_bool(const string& name, const  string& disc,
+//	bool init_status, bool* status) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->type = Port::TYPE::BOOL;
+//
+//	*status = init_status;
+//	port->data.b = status;
+//	
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//}
+//
+//void Module::register_int(const string& name, const string& disc,
+//	int init_val, int* val) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->type = Port::TYPE::INT;
+//
+//	*val = init_val;
+//	port->data.i = val;
+//
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//}
+//
+//void Module::register_double(const string& name, const string& disc,
+//	double init_val, double* val) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->type = Port::TYPE::DOUBLE;
+//
+//	*val = init_val;
+//	port->data.d = val;
+//
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//}
+//
+//void Module::register_string(const string& name, const string& disc,
+//	string init_str, string* str) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->type = Port::TYPE::STRING;
+//
+//	*str = init_str;
+//	port->data.s = str;
+//
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//}
 
-void Module::register_int(const string& name, const string& disc,
-	int init_val, int* val) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->type = Port::TYPE::INT;
-
-	*val = init_val;
-	port->data.i = val;
-
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_double(const string& name, const string& disc,
-	double init_val, double* val) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->type = Port::TYPE::DOUBLE;
-
-	*val = init_val;
-	port->data.d = val;
-
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_string(const string& name, const string& disc,
-	string init_str, string* str) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->type = Port::TYPE::STRING;
-
-	*str = init_str;
-	port->data.s = str;
-
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_memory(const string& name, const string& disc, Memory** mem) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->mem = mem;
-	port->type = Port::TYPE::MEMORY;
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_bool_callback(const string& name, const string& disc,
-	BoolSetCallback bsc, BoolGetCallback bgc) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->bsc = bsc;
-	port->bgc = bgc;
-	port->type = Port::TYPE::BOOL_CALLBACK;
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_int_callback(const string& name, const string& disc,
-	IntSetCallback isc, IntGetCallback igc) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->isc = isc;
-	port->igc = igc;
-	port->type = Port::TYPE::INT_CALLBACK;
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_double_callback(const string& name, const string& disc,
-	DoubleSetCallback dsc, DoubleGetCallback dgc){
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->dsc = dsc;
-	port->dgc = dgc;
-	port->type = Port::TYPE::DOUBLE_CALLBACK;
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_string_callback(const string& name, const string& disc,
-	StringSetCallback ssc, StringGetCallback sgc) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->ssc = ssc;
-	port->sgc = sgc;
-	port->type = Port::TYPE::STRING_CALLBACK;
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_callback(const string& name, const string& disc,
-	PortSetCallback psc, PortGetCallback pgc) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->psc = psc;
-	port->pgc = pgc;
-	port->type = Port::TYPE::CALLBACK_FUNC;
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
+//void Module::register_memory(const string& name, const string& disc, Memory** mem) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->mem = mem;
+//	port->type = Port::TYPE::MEMORY;
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//}
+//
+//void Module::register_bool_callback(const string& name, const string& disc,
+//	BoolSetCallback bsc, BoolGetCallback bgc) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->bsc = bsc;
+//	port->bgc = bgc;
+//	port->type = Port::TYPE::BOOL_CALLBACK;
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//}
+//
+//void Module::register_int_callback(const string& name, const string& disc,
+//	IntSetCallback isc, IntGetCallback igc) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->isc = isc;
+//	port->igc = igc;
+//	port->type = Port::TYPE::INT_CALLBACK;
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//}
+//
+//void Module::register_double_callback(const string& name, const string& disc,
+//	DoubleSetCallback dsc, DoubleGetCallback dgc){
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->dsc = dsc;
+//	port->dgc = dgc;
+//	port->type = Port::TYPE::DOUBLE_CALLBACK;
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//}
+//
+//void Module::register_string_callback(const string& name, const string& disc,
+//	StringSetCallback ssc, StringGetCallback sgc) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->ssc = ssc;
+//	port->sgc = sgc;
+//	port->type = Port::TYPE::STRING_CALLBACK;
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//}
+//
+//void Module::register_callback(const string& name, const string& disc,
+//	PortSetCallback psc, PortGetCallback pgc) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->psc = psc;
+//	port->pgc = pgc;
+//	port->type = Port::TYPE::CALLBACK_FUNC;
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//}
 
 
 bool Module::connect_memory(Memory* memory, const string& port_name) {
