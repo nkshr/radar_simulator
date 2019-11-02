@@ -16,6 +16,56 @@ static unsigned module_id = 0;
 #define FLAG_INITIALIZED 2
 #define FLAG_FINISHED 4
 
+bool smpl_bsc(const string& in, bool* out) {
+	return str_to_bool(in, *out);
+}
+
+bool smpl_isc(const string& in, int* out) {
+	*out = stoi(in);
+	return true;
+}
+
+bool smpl_dsc(const string& in, double* out) {
+	*out = stod(in);
+	return true;
+}
+
+bool smpl_ssc(const string& in, string* out) {
+	*out = in;
+	return  true;
+}
+
+bool smpl_esc(const string& in, const vector<string>*  strs, void* out) {
+	vector<string>::const_iterator it = find(strs->begin(), strs->end(),in);
+	if (it != strs->end()) {
+		int index = distance(strs->begin(), it);
+		*(static_cast<int*>(out)) = index;
+		return true;
+	}
+	
+	return false;
+}
+
+string smpl_bgc(const bool* in) {
+	return bool_to_str(*in);
+}
+
+string smpl_igc(const int* in) {
+	return to_string(*in);
+}
+
+string smpl_dgc(const double* in) {
+	return to_string(*in);
+}
+
+string smpl_sgc(const string* in) {
+	return *in;
+}
+
+string smpl_egc(const vector<string>* strs, const void* in) {
+	int index = *static_cast<const int*>(in);
+	return (*strs)[index];
+}
 
 Module::Module(Board * board) : m_board(board), m_bdebug(false),
 m_command(STOP), m_status(0x00),
@@ -23,9 +73,9 @@ m_module_id(module_id++){
 	m_clock = m_board->get_clock();
 	register_bool("debug", "debug flag(default no).", false, &m_bdebug);
 
-	/*register_double_callback("cf", "clock frequency(default 10.0).",
-		[&](double cf) {m_clock->set_clock_freq(cf); return true; },
-		[&]() {return m_clock->get_clock_freq(); });*/
+	//register_double_callback("cf", "clock frequency(default 10.0).",
+	//	[&](double cf) {m_clock->set_clock_freq(cf); return true; },
+	//	[&]() {return m_clock->get_clock_freq(); });
 
 	PortSetCallback psc_cf = [&](const string& cf) {m_clock->set_clock_freq(stod(cf)); return true; };
 	PortGetCallback pgc_cf = [&]() {return to_string(m_clock->get_clock_freq()); };
@@ -148,7 +198,7 @@ void Module::print(const string& str) {
 }
 
 void Module::register_bool(const string& name, const  string& disc,
-	bool init_status, bool* status) {
+	bool init_status, bool* status, BoolSetCallback sc, BoolGetCallback gc) {
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
@@ -156,12 +206,14 @@ void Module::register_bool(const string& name, const  string& disc,
 
 	*status = init_status;
 	port->data.b = status;
-	
+	port->bsc = sc;
+	port->bgc = gc;
+
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
 
 void Module::register_int(const string& name, const string& disc,
-	int init_val, int* val) {
+	int init_val, int* val, IntSetCallback sc, IntGetCallback gc) {
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
@@ -170,11 +222,14 @@ void Module::register_int(const string& name, const string& disc,
 	*val = init_val;
 	port->data.i = val;
 
+	port->isc = sc;
+	port->igc = gc;
+
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
 
 void Module::register_double(const string& name, const string& disc,
-	double init_val, double* val) {
+	double init_val, double* val, DoubleSetCallback sc, DoubleGetCallback gc) {
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
@@ -183,11 +238,14 @@ void Module::register_double(const string& name, const string& disc,
 	*val = init_val;
 	port->data.d = val;
 
+	port->dsc = sc;
+	port->dgc = gc;
+
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
 
 void Module::register_string(const string& name, const string& disc,
-	string init_str, string* str) {
+	string init_str, string* str, StringSetCallback sc, StringGetCallback gc) {
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
@@ -195,6 +253,9 @@ void Module::register_string(const string& name, const string& disc,
 
 	*str = init_str;
 	port->data.s = str;
+
+	port->ssc = sc;
+	port->sgc = gc;
 
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
@@ -208,48 +269,18 @@ void Module::register_memory(const string& name, const string& disc, Memory** me
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
 
-void Module::register_bool_callback(const string& name, const string& disc,
-	BoolSetCallback bsc, BoolGetCallback bgc) {
+void Module::register_enum(const string& name, const string& disc,
+	int init_val, void* val, vector<string>* strs, EnumSetCallback sc, EnumGetCallback gc) {
 	Port* port = new Port;
 	port->name = name;
 	port->disc = disc;
-	port->bsc = bsc;
-	port->bgc = bgc;
-	port->type = Port::TYPE::BOOL_CALLBACK;
+	port->data.e = val;
+	*static_cast<int*>(val) = init_val;
+	port->type = Port::TYPE::ENUM;
+	port->esc = sc;
+	port->egc = gc;
 	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
 
-void Module::register_int_callback(const string& name, const string& disc,
-	IntSetCallback isc, IntGetCallback igc) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->isc = isc;
-	port->igc = igc;
-	port->type = Port::TYPE::INT_CALLBACK;
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_double_callback(const string& name, const string& disc,
-	DoubleSetCallback dsc, DoubleGetCallback dgc){
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->dsc = dsc;
-	port->dgc = dgc;
-	port->type = Port::TYPE::DOUBLE_CALLBACK;
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_string_callback(const string& name, const string& disc,
-	StringSetCallback ssc, StringGetCallback sgc) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->ssc = ssc;
-	port->sgc = sgc;
-	port->type = Port::TYPE::STRING_CALLBACK;
-	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
 
 void Module::register_callback(const string& name, const string& disc,
@@ -289,42 +320,15 @@ bool Module::set_data(const string& name, const string& data) {
 	Port* port = pm_it->second;
 	switch (port->type) {
 	case Port::TYPE::BOOL:
-		if ("yes" == data || "y" == data) {
-			*port->data.b = true;
-		}
-		else if ("no" == data || "n" == data) {
-			*port->data.b = false;
-		}
-		else {
-			return false;
-		}
-		return true;
+		return port->bsc(data, port->data.b);
 	case Port::TYPE::INT:
-		(*port->data.i) = stoi(data);
-		return true;
+		return port->isc(data, port->data.i);
 	case Port::TYPE::DOUBLE:
-		(*port->data.d) = stod(data);
-		return true;
+		return port->dsc(data, port->data.d);
 	case Port::TYPE::STRING:
-		(*port->data.s) = data;
-		return true;
-	case Port::TYPE::BOOL_CALLBACK:
-		if ("yes" == data || "y" == data) {
-			(port->bsc)(true);
-		}
-		else if ("no" == data || "n" == data) {
-			(port->bsc)(false);
-		}
-		else {
-			return false;
-		}
-		return true;
-	case Port::TYPE::INT_CALLBACK:
-		return (port->isc)(stoi(data));
-	case  Port::TYPE::DOUBLE_CALLBACK:
-		return (port->dsc)(stod(data));
-	case Port::TYPE::STRING_CALLBACK:
-		return (port->ssc)(data);
+		return port->ssc(data, port->data.s);
+	case Port::TYPE::ENUM:
+		return port->esc(data, port->strs, port->data.e);
 	case Port::TYPE::CALLBACK_FUNC:
 		return port->psc(data);
 	default:
@@ -342,31 +346,22 @@ bool Module::get_data(const string& name, string& data) {
 	Port* port = pm_it->second;
 	switch (port->type) {
 	case Port::TYPE::BOOL:
-		data = bool_to_str((*port->data.b));
+		data = port->bgc(port->data.b);
 		return true;
 	case Port::TYPE::INT:
-		data = to_string((*port->data.i));
+		data = port->igc((port->data.i));
 		return true;
 	case Port::TYPE::DOUBLE:
-		data = to_string((*port->data.d));
+		data = port->dgc((port->data.d));
 		return true;
 	case Port::TYPE::STRING:
-		data = (*port->data.s);
+		data = port->sgc(port->data.s);
 		return true;
-	case Port::TYPE::BOOL_CALLBACK:
-		data = bool_to_str((port->bgc)());
-		return true;
-	case Port::TYPE::INT_CALLBACK:
-		data = to_string((port->igc)());
-		return true;
-	case Port::TYPE::DOUBLE_CALLBACK:
-		data = to_string((port->dgc)());
-		return true;
-	case Port::TYPE::STRING_CALLBACK:
-		data = (port->sgc)();
+	case Port::TYPE::ENUM:
+		data = (port->egc(port->strs, port->data.e));
 		return true;
 	case Port::TYPE::CALLBACK_FUNC:
-		data = (port->pgc)();
+		data = (port->pgc());
 		return true;
 	default:
 		return false;

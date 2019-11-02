@@ -20,16 +20,30 @@ using std::pair;
 using std::function;
 
 typedef function<bool(const string&)> PortSetCallback;
-typedef function<bool(bool)> BoolSetCallback;
-typedef function<bool(int)> IntSetCallback;
-typedef function<bool(double)> DoubleSetCallback;
-typedef function<bool(const string&)> StringSetCallback;
+typedef function<bool(const string&, bool*)> BoolSetCallback;
+typedef function<bool(const string&, int*)> IntSetCallback;
+typedef function<bool(const string&, double*)> DoubleSetCallback;
+typedef function<bool(const string&, string*)> StringSetCallback;
+typedef function<bool(const string&, const vector<string> *, void*)> EnumSetCallback;
 
 typedef function<string()> PortGetCallback;
-typedef function<bool()> BoolGetCallback;
-typedef function<int()> IntGetCallback;
-typedef function<double()> DoubleGetCallback;
-typedef function<string()> StringGetCallback;
+typedef function<string(const bool*)> BoolGetCallback;
+typedef function<string(const int*)> IntGetCallback;
+typedef function<string(const double*)> DoubleGetCallback;
+typedef function<string(const string*)> StringGetCallback;
+typedef function<string(const vector<string>* strs, const void*)> EnumGetCallback;
+
+bool smpl_bsc(const string& in, bool* out);
+bool smpl_isc(const string& in, int* out);
+bool smpl_dsc(const string& in, double* out);
+bool smpl_ssc(const string& in, string* out);
+bool smpl_esc(const string& in, const vector<string>* strs, void* out);
+
+string smpl_bgc(const bool* in);
+string smpl_igc(const int* in);
+string smpl_dgc(const double* in);
+string smpl_sgc(const string* in);
+string smpl_egc(const vector<string>* strs, const void* in);
 
 struct Port {
 	enum TYPE {
@@ -37,23 +51,22 @@ struct Port {
 		INT,
 		DOUBLE,
 		STRING,
+		ENUM,
 		MEMORY,
-		BOOL_CALLBACK,
-		INT_CALLBACK,
-		DOUBLE_CALLBACK,
-		STRING_CALLBACK,
-		CALLBACK_FUNC,
-		TYPE_END
+		CALLBACK_FUNC
 	};
 
 	string name;
 	string disc;
+	
+	vector<string> * strs;
 
 	union Data {
 		bool* b;
 		int* i;
 		double* d;
 		string* s;
+		void* e;
 	}data;
 	
 	Memory** mem;
@@ -65,12 +78,14 @@ struct Port {
 	IntSetCallback isc;
 	DoubleSetCallback dsc;
 	StringSetCallback ssc;
-	
+	EnumSetCallback esc;
+
 	PortGetCallback pgc;
 	BoolGetCallback bgc;
 	IntGetCallback igc;
 	DoubleGetCallback dgc;
 	StringGetCallback sgc;
+	EnumGetCallback egc;
 };
 
 typedef map<const string, Port*> PortMap;
@@ -160,26 +175,19 @@ protected:
 	};
 
 	void register_bool(const string& name, const string& disc,
-		bool init_status, bool* status);
+		bool init_status, bool* status, BoolSetCallback sc = smpl_bsc, BoolGetCallback gc = smpl_bgc);
 	void register_int(const string& name, const string& disc,
-		int init_val, int* val);
+		int init_val, int* val, IntSetCallback sc = smpl_isc, IntGetCallback gc = smpl_igc);
 	void register_double(const string& name, const string& disc,
-		double init_val, double* val);
+		double init_val, double* val, DoubleSetCallback sc = smpl_dsc, DoubleGetCallback gc = smpl_dgc);
 	void register_string(const string& name, const string& disc,
-		string init_str, string* str);
+		string init_str, string* str, StringSetCallback sc = smpl_ssc, StringGetCallback gc = smpl_sgc);
+
+	void register_enum(const string& name, const string& disc,
+		int init_val, void* val, vector<string>* strs, EnumSetCallback sc = smpl_esc, EnumGetCallback gc = smpl_egc);
+
 	void register_memory(const string& name, const string& disc,
 		Memory** mem);
-
-///////////Remove after few week/////////////////	
-	void register_bool_callback(const string& name, const string& disc,
-		BoolSetCallback bsc, BoolGetCallback bgc);
-	void register_int_callback(const string& name, const string& disc,
-		IntSetCallback isc, IntGetCallback igc);
-	void register_double_callback(const string& name, const string& disc,
-		DoubleSetCallback isc, DoubleGetCallback dgc);
-	void register_string_callback(const string& name, const string& disc,
-		StringSetCallback ssc, StringGetCallback sgc);
-//////////////////////////////////////////////////
 
 	void register_callback(const string& name, const string& disc,
 		PortSetCallback psc, PortGetCallback pgc);
