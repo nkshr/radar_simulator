@@ -55,10 +55,10 @@ struct Port {
 		MEMORY,
 		CALLBACK_FUNC
 	};
-
+	
 	string name;
 	string disc;
-	
+
 	vector<string> strs;
 
 	union Data {

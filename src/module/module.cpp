@@ -295,8 +295,6 @@ void Module::register_callback(const string& name, const string& disc,
 	port->type = Port::TYPE::CALLBACK_FUNC;
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
-
-
 bool Module::connect_memory(Memory* memory, const string& port_name) {
 	unique_lock<mutex> lock(m_lock);
 
