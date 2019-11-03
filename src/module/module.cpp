@@ -35,10 +35,10 @@ bool smpl_ssc(const string& in, string* out) {
 	return  true;
 }
 
-bool smpl_esc(const string& in, const vector<string>*  strs, void* out) {
-	vector<string>::const_iterator it = find(strs->begin(), strs->end(),in);
-	if (it != strs->end()) {
-		int index = distance(strs->begin(), it);
+bool smpl_esc(const string& in, const vector<string>&  strs, void* out) {
+	vector<string>::const_iterator it = find(strs.begin(), strs.end(),in);
+	if (it != strs.end()) {
+		int index = distance(strs.begin(), it);
 		*(static_cast<int*>(out)) = index;
 		return true;
 	}
@@ -62,9 +62,9 @@ string smpl_sgc(const string* in) {
 	return *in;
 }
 
-string smpl_egc(const vector<string>* strs, const void* in) {
+string smpl_egc(const vector<string>& strs, const void* in) {
 	int index = *static_cast<const int*>(in);
-	return (*strs)[index];
+	return strs[index];
 }
 
 Module::Module(Board * board) : m_board(board), m_bdebug(false),
@@ -269,19 +269,21 @@ void Module::register_memory(const string& name, const string& disc, Memory** me
 	m_ports.insert(pair<const string, Port*>(port->name, port));
 }
 
-void Module::register_enum(const string& name, const string& disc,
-	int init_val, void* val, vector<string>* strs, EnumSetCallback sc, EnumGetCallback gc) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->data.e = val;
-	*static_cast<int*>(val) = init_val;
-	port->type = Port::TYPE::ENUM;
-	port->esc = sc;
-	port->egc = gc;
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-
-}
+//template <typename T>
+//void Module::register_enum(const string& name, const string& disc,
+//	int init_val, void* val, const vector<string>& strs, EnumSetCallback sc, EnumGetCallback gc) {
+//	Port* port = new Port;
+//	port->name = name;
+//	port->disc = disc;
+//	port->data.e = val;
+//	*static_cast<int*>(val) = init_val;
+//	port->type = Port::TYPE::ENUM;
+//	port->esc = sc;
+//	port->egc = gc;
+//	port->strs = strs;
+//	m_ports.insert(pair<const string, Port*>(port->name, port));
+//
+//}
 
 void Module::register_callback(const string& name, const string& disc,
 	PortSetCallback psc, PortGetCallback pgc) {

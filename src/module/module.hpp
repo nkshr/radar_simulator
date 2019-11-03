@@ -24,26 +24,26 @@ typedef function<bool(const string&, bool*)> BoolSetCallback;
 typedef function<bool(const string&, int*)> IntSetCallback;
 typedef function<bool(const string&, double*)> DoubleSetCallback;
 typedef function<bool(const string&, string*)> StringSetCallback;
-typedef function<bool(const string&, const vector<string> *, void*)> EnumSetCallback;
+typedef function<bool(const string&, const vector<string>&, void*)> EnumSetCallback;
 
 typedef function<string()> PortGetCallback;
 typedef function<string(const bool*)> BoolGetCallback;
 typedef function<string(const int*)> IntGetCallback;
 typedef function<string(const double*)> DoubleGetCallback;
 typedef function<string(const string*)> StringGetCallback;
-typedef function<string(const vector<string>* strs, const void*)> EnumGetCallback;
+typedef function<string(const vector<string>& strs, const void*)> EnumGetCallback;
 
 bool smpl_bsc(const string& in, bool* out);
 bool smpl_isc(const string& in, int* out);
 bool smpl_dsc(const string& in, double* out);
 bool smpl_ssc(const string& in, string* out);
-bool smpl_esc(const string& in, const vector<string>* strs, void* out);
+bool smpl_esc(const string& in, const vector<string>& strs, void* out);
 
 string smpl_bgc(const bool* in);
 string smpl_igc(const int* in);
 string smpl_dgc(const double* in);
 string smpl_sgc(const string* in);
-string smpl_egc(const vector<string>* strs, const void* in);
+string smpl_egc(const vector<string>& strs, const void* in);
 
 struct Port {
 	enum TYPE {
@@ -59,7 +59,7 @@ struct Port {
 	string name;
 	string disc;
 	
-	vector<string> * strs;
+	vector<string> strs;
 
 	union Data {
 		bool* b;
@@ -183,8 +183,20 @@ protected:
 	void register_string(const string& name, const string& disc,
 		string init_str, string* str, StringSetCallback sc = smpl_ssc, StringGetCallback gc = smpl_sgc);
 
+	template <typename T>
 	void register_enum(const string& name, const string& disc,
-		int init_val, void* val, vector<string>* strs, EnumSetCallback sc = smpl_esc, EnumGetCallback gc = smpl_egc);
+		T init_val, T* val, const vector<string>& strs, EnumSetCallback sc = smpl_esc, EnumGetCallback gc = smpl_egc){
+		Port* port = new Port;
+		port->name = name;
+		port->disc = disc;
+		port->data.e = (void*)val;
+		*static_cast<T*>(val) = init_val;
+		port->type = Port::TYPE::ENUM;
+		port->esc = sc;
+		port->egc = gc;
+		port->strs = strs;
+		m_ports.insert(pair<const string, Port*>(port->name, port));
+	}
 
 	void register_memory(const string& name, const string& disc,
 		Memory** mem);

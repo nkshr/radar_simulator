@@ -83,6 +83,24 @@ bool check_checksum(char* buf, int buf_size, int32_t checksum);
 
 char * load_text(const char *fname);
 
+enum IMG_FMT {
+	IFMT_RGB,
+	IFMT_RGBA,
+	IFMT_GRAY,
+};
+
+const static map<string, IMG_FMT> img_fmt_map{
+	make_pair("rgb", IFMT_RGB),
+	make_pair("rgba", IFMT_RGBA),
+	make_pair("gray", IFMT_GRAY)
+};
+
+const vector<string> img_fmt_strs{
+	"rgb",
+	"rgba",
+	"gray"
+};
+
 class Image {
 private:
 	unsigned m_w;
@@ -130,19 +148,7 @@ public:
 	Image move();
 };
 
-Image * imread(string &img_name);
+Image * imread(string &img_name, IMG_FMT fmt = IFMT_RGB);
 
-
-enum IMG_FORMAT {
-	IFMT_RGB,
-	IFMT_RGBA,
-	IFMT_GRAY,
-};
-
-const static map<string, IMG_FORMAT> img_format_map {
-	make_pair("rgb", IFMT_RGB),
-	make_pair("rgba", IFMT_RGBA),
-	make_pair("gray", IFMT_GRAY)
-};
 
 string to_time_string(long long t);

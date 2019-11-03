@@ -249,14 +249,21 @@ Image Image::move() {
 	return img;
 }
 
-Image * imread(string &img_name) {
+Image * imread(string &img_name, IMG_FMT fmt) {
 	unsigned char * pixs;
 	unsigned w;
 	unsigned h;
 	unsigned d;
 	vector<unsigned char> p;
 	//unsigned error = lodepng_decode_file(&pixs, &w, &h, img_name.c_str(), LCT_GREY, 8);
-	unsigned error = lodepng::decode(p, w, h, img_name.c_str(), LCT_GREY,8);
+	unsigned error;
+	switch (fmt) {
+	case IFMT_RGB:
+	case IFMT_RGBA:
+	case IFMT_GRAY:
+		error = lodepng::decode(p, w, h, img_name.c_str(), LCT_GREY, 8);
+		break;
+	}
 	//cout << p.size() << endl;
 	/*string wfname = img_name + "xxx.png";
 	error = lodepng::encode(wfname,p, w, h, LCT_GREY);*/
