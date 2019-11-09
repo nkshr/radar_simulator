@@ -6,10 +6,12 @@
 #include <thread>
 #include <mutex>
 #include <list>
+#include <string>
 
 using std::chrono::steady_clock;
 using std::mutex;
 using std::list;
+using std::string;
 
 class Clock {
 
@@ -36,15 +38,17 @@ public:
 	void lock();
 	void unlock();
 
+	string get_info_str();
+
 private:
 	bool m_stop;
 	bool m_strick;
 
 	unsigned int m_cf; //clock frequency
 
-	long long m_num_clock;
-	long long m_num_proc;
-	long long m_num_excess;
+	long long m_num_clocks;
+	long long m_num_procs;
+	long long m_num_expired;
 	long long m_time_per_clock;
 	long long m_target_time;
 	long long m_delta;

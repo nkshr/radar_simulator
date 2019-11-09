@@ -15,6 +15,7 @@ static unsigned module_id = 0;
 #define FLAG_TURNED_ON 1
 #define FLAG_INITIALIZED 2
 #define FLAG_FINISHED 4
+#define FLAG_STOPPED 8
 
 bool smpl_bsc(const string& in, bool* out) {
 	return str_to_bool(in, *out);
@@ -67,8 +68,8 @@ string smpl_egc(const vector<string>& strs, const void* in) {
 	return strs[index];
 }
 
-Module::Module(Board * board) : m_board(board), m_bdebug(false),
-m_command(STOP), m_status(0x00),
+Module::Module(const string&name, Board * board) : m_name(name), m_board(board), m_bdebug(false),
+m_command(BE_IDLE), m_status(0x00),
 m_module_id(module_id++){
 	m_clock = m_board->get_clock();
 	register_bool("debug", "debug flag(default no).", false, &m_bdebug);
@@ -129,21 +130,27 @@ void Module::processing_loop() {
 				if(init_process())
 					m_status |= FLAG_INITIALIZED;
 				m_cv.notify_one();
-				m_command = Module::COMMAND::STOP;
+				m_command = Module::COMMAND::BE_IDLE;
 				break;
 			case Module::COMMAND::RUN:
+				
 				if (m_status & FLAG_INITIALIZED) {
 					if (!main_process())
-						m_command = Module::COMMAND::STOP;
+						m_command = Module::COMMAND::BE_IDLE;
 				}
 				break;
 			case Module::COMMAND::STOP:
+				m_status !| FLAG_STOPPED;
+				print(m_name + " " + m_clock->get_info_str() + "\n");
+				m_command = Module::COMMAND::BE_IDLE;
+			case Module::COMMAND::BE_IDLE:
 				break;
 			case Module::COMMAND::FINISH:
 				if (finish_process())
 					m_status |= FLAG_FINISHED;
 
-				m_command = Module::COMMAND::STOP;
+				print(m_name + " " + m_clock->get_info_str() + "\n");
+				m_command = Module::COMMAND::BE_IDLE;
 				m_cv.notify_one();
 				break;
 			case Module::COMMAND::TURN_OFF:

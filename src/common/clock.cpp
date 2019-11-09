@@ -1,11 +1,13 @@
 //#define DEBUG_CLOCK
+#include <string>
 #include "clock.hpp"
 
 using namespace std;
 using namespace std::chrono;
 using namespace std::this_thread;
 
-Clock::Clock() : m_stop(false), m_strick(false), m_num_clock(0), m_num_proc(0), m_num_excess(0),
+Clock::Clock() : m_stop(false), m_strick(false), m_num_clocks(0), m_num_procs(0),
+m_num_expired(0),
 m_cf(10), m_target_time(0), m_delta(0), m_sum_diff(0), m_ref_time(0ll){
 	m_ref_time = steady_clock::now().time_since_epoch().count();
 	m_base_time = system_clock::now().time_since_epoch().count()*100;
@@ -30,12 +32,12 @@ void Clock::start() {
 
 
 void Clock::stop() {
-	m_proc_rate = static_cast<double>(m_num_proc) / static_cast<double>(m_num_clock);
+	m_proc_rate = static_cast<double>(m_num_procs) / static_cast<double>(m_num_clocks);
 }
 
 void Clock::update() {
-	m_num_clock++;
-	m_num_proc++;
+	m_num_clocks++;
+	m_num_procs++;
 	
 	//long long diff = m_target_time - m_time_after_sleep;
 	//m_sum_diff += abs(diff);
@@ -52,7 +54,13 @@ void Clock::update() {
 
 
 	if (time_before_sleep > m_target_time){
-		m_num_excess += (time_before_sleep - m_target_time) / m_time_per_clock + 1;
+		long long tmp = (time_before_sleep - m_target_time) / m_time_per_clock;
+		if (tmp > 0)
+			tmp += 1;
+
+		m_num_clocks += tmp;
+
+		m_num_expired += tmp;
 		const long long rem = time_before_sleep % m_time_per_clock;
 		m_sleep_time = m_time_per_clock - rem + m_delta;
 		m_target_time = time_before_sleep + m_sleep_time;
@@ -109,4 +117,11 @@ void Clock::lock() {
 
 void Clock::unlock() {
 	m_lock.unlock();
+}
+
+string Clock::get_info_str() {
+	m_proc_rate = static_cast<double>(m_num_procs) / static_cast<double>(m_num_clocks);
+	string str = "proc rate : " + to_string(m_num_procs) + "/" + to_string(m_num_clocks) 
+		+ "(" + to_string(m_proc_rate*100) + "\%)";
+	return str;
 }

@@ -12,7 +12,7 @@ class RsimTest : public Module {
 protected:
 	bool m_bprint;
 public:
-	RsimTest(Board * board) : Module(board){
+	RsimTest(const string name, Board * board) : Module(name, board){
 		register_bool("print", "boolean value for printing time.(default y)", true, &m_bprint);
 	}
 

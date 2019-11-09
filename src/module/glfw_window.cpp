@@ -34,7 +34,7 @@ void GLFWWindow::GLFWCallback::set_window(GLFWWindow * window) {
 	m_window = window;
 }
 
-GLFWWindow::GLFWWindow(Board * board) : Module(board), m_glfw_initialized(false),
+GLFWWindow::GLFWWindow(const string& name, Board * board) : Module(name, board), m_glfw_initialized(false),
 m_width(640), m_height(480), m_ratio(640.f / 480.f), m_name("glfw window"),
 m_brev_rows(false), m_brev_cols(false), m_bpause(false),
 m_brev_rows_done(false), m_brev_cols_done(false){
@@ -107,7 +107,7 @@ bool GLFWWindow::finish_process() {
 	return true;
 }
 
-SLAMViewer::SLAMViewer(Board * board) : GLFWWindow(board), m_bprint(false), m_binitialized(false), m_img(nullptr){
+SLAMViewer::SLAMViewer(const string&name, Board * board) : GLFWWindow(name, board), m_bprint(false), m_binitialized(false), m_img(nullptr){
 	m_shader.vsname = "C:/cygwin64/home/naoka/github/radar_simulator/src/shader/texture.vs";
 	m_shader.fsname = "C:/cygwin64/home/naoka/github/radar_simulator/src/shader/texture.fs";
 

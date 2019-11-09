@@ -267,6 +267,45 @@ bool SubProcess::CmdFinish::process(vector<string>& args) {
 }
 
 bool SubProcess::CmdShutdown::process(vector<string>& args) {
+	ModMap targets;
+	if (args.size()) {
+		for (ModMap::iterator it = m_sub_proc->m_modules.begin(); it != m_sub_proc->m_modules.end(); ++it) {
+			const string &name = it->first;
+			Module *module = it->second;
+
+			for (int i = 0; i < args.size(); ++i) {
+				if (args[i] == name)
+					targets.insert(*it);
+			}
+		}
+	}
+	else {
+		targets = m_sub_proc->m_modules;
+	}
+
+	for (ModMap::iterator it = targets.begin(); it != targets.end(); ++it) {
+		const string &name = it->first;
+		Module *module = it->second;
+		module->finish();
+	}
+
+	for (ModMap::iterator it = targets.begin(); it != targets.end(); ++it) {
+		const string &name = it->first;
+		Module *module = it->second;
+		module->wait_finish_reply();
+		if (!module->get_finish_status()) {
+			msg += name + " was finished abnormally.";
+		}
+		else {
+			module->turn_off();
+			msg += name + "  was fineshed.";
+		}
+		if (it != --targets.end()) {
+			msg += "\n";
+		}
+
+	}
+
 	m_sub_proc->m_bfinish = true;
 	m_sub_proc->m_board->finish_main_proc();
 	msg = "System is shutdowning.";

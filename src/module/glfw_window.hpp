@@ -51,7 +51,7 @@ protected:
 	};
 
 public:
-	GLFWWindow(Board * board);
+	GLFWWindow(const string& name, Board * board);
 	
 	virtual bool init_process();
 	virtual bool main_process();
@@ -78,7 +78,7 @@ private:
 	bool m_binitialized;
 
 public:
-	SLAMViewer(Board * board);
+	SLAMViewer(const string& name, Board * board);
 
 	virtual bool init_process();
 	virtual bool main_process();

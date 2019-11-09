@@ -106,7 +106,7 @@ bool SubProcess::get_data(const string& mname, const string& pname, string& data
 bool SubProcess::create_module(const string& type, const string& name) {
 	for (ModCreatorMap::iterator it = m_mod_creators.begin(); it != m_mod_creators.end(); ++it) {
 		if (it->first == type) {
-			Module* m = (this->*(it->second))(m_board);
+			Module* m = (this->*(it->second))(name, m_board);
 			m_modules.insert(pair<const string, Module*>(name, m));
 			return true;
 		}
@@ -115,8 +115,8 @@ bool SubProcess::create_module(const string& type, const string& name) {
 }
 
 template <typename T>
-Module* SubProcess::create_module(Board * board){
-	return dynamic_cast<Module*>(new T(board));
+Module* SubProcess::create_module(const string& name, Board * board){
+	return dynamic_cast<Module*>(new T(name, board));
 }
 
 bool SubProcess::create_memory(const string& type, const string& name) {

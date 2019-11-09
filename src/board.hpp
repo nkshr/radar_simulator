@@ -23,7 +23,7 @@ class Module;
 
 void foo(const char*s);
 
-typedef Module* (SubProcess::*ModCreator)(Board * board);
+typedef Module* (SubProcess::*ModCreator)(const string& name, Board * board);
 typedef map<const string, Module*> ModMap;
 typedef map<const string, ModCreator> ModCreatorMap;
 
@@ -101,7 +101,7 @@ private:
 	////////////////////////////////////////
 
 	template<typename T>
-	Module* create_module(Board * board);
+	Module* create_module(const string& name, Board * board);
 
 	template<typename T>
 	Memory* create_memory();

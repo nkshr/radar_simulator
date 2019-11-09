@@ -96,12 +96,13 @@ public:
 		INIT,
 		RUN,
 		STOP,
+		BE_IDLE,
 		FINISH,
 		TURN_OFF,
 		OPERATION_END
 	};
 
-	Module(Board * board);
+	Module(const string& name, Board * board);
 	virtual ~Module() {};
 
 //////////////////thread safe functions///////////////
@@ -143,6 +144,7 @@ private:
 
 	unsigned m_module_id;
 
+	string m_name;
 
 protected:
 

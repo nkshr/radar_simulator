@@ -28,7 +28,7 @@ private:
 	SOCKET m_sock;
 	
 public:
-	TimeSyncServer(Board * board);
+	TimeSyncServer(const string& name, Board * board);
 	~TimeSyncServer();
 	virtual bool init_process();
 	virtual bool main_process();
@@ -53,7 +53,7 @@ private:
 	list<OffsetAndDelay> m_oad_list;
 
 public:
-	TimeSyncClient(Board * board);
+	TimeSyncClient(const string& name, Board * board);
 	~TimeSyncClient();
 	virtual bool init_process();
 	virtual bool main_process();

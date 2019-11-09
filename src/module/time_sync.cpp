@@ -18,7 +18,7 @@ char* type2str(char type) {
 	}
 }
 
-TimeSyncServer::TimeSyncServer(Board * board) : Module(board){
+TimeSyncServer::TimeSyncServer(const string& name, Board * board) : Module(name, board){
 	register_bool("update", "update port number(default n)", false, &m_bupdate);
 	register_int("port", "port number for network time protocol.(default).", 9090, &m_port);
 
@@ -120,7 +120,7 @@ bool TimeSyncServer::finish_process() {
 	return true;
 }
 
-TimeSyncClient::TimeSyncClient(Board * board) : Module(board) {
+TimeSyncClient::TimeSyncClient(const string& name, Board * board) : Module(name, board) {
 	register_bool("update", "update port number(default n)", false, &m_bupdate);
 	register_int("port", "port number for network time protocol.(default).", 9090, &m_port);
 

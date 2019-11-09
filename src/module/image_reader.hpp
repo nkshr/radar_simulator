@@ -26,7 +26,7 @@ protected:
 	IMG_FMT m_img_fmt;
 
 public:
-	ImageReader(Board * board) : Module(board) , m_id(0), 
+	ImageReader(const string& name, Board * board) : Module(name, board) , m_id(0), 
 	m_brev_cols(false), m_brev_rows(false){
 		register_bool("print", "boolean value to spcify if print image names .(default y)",
 			true, &m_bprint);
