@@ -185,7 +185,7 @@ bool SLAMViewer::main_process() {
 	if (m_mem_img) {
 		if (!m_bpause) {
 			delete m_img;
-			m_img = m_mem_img->get_image();
+			m_img = m_mem_img->get_data();
 			m_brev_rows_done = m_brev_cols_done = false;
 		}
 		

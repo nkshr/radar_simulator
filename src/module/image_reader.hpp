@@ -73,7 +73,7 @@ public:
 			if (m_btranspose)
 				img->transpose();
 
-			m_mem_img->set_image(img);
+			m_mem_img->set_data(img);
 		}
 
 		if (m_bprint) {

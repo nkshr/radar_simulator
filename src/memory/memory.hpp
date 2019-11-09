@@ -19,7 +19,7 @@ public:
 	//virtual bool set_data(const string& value) = 0;
 	//virtual void write(char* buf, int buf_size);
 	//virtual bool read(const char* buf, int buf_size);
-	virtual string get_data();
+	//virtual string get_data();
 
 	void lock();
 	void unlock();
@@ -65,23 +65,100 @@ private:
 	string m_string;
 };
 
-class MemImage : public Memory {
+//template <typename  T>
+//class MemRingBuf;
+
+
+template <typename T>
+class MemRingBuf : public Memory {
 public:
-	MemImage();
-	
-	void set_image(Image * img);
-	
-	Image* get_image();
-	
-	long long get_time();
-	
+	MemRingBuf();
+
+	void set_data(T data);
+
+	T get_data();
+
 	bool empty();
 
-	long long m_wref_count;
-	long long m_rref_count;
-
 private:
-	vector<Image*> m_imgs;
-	vector<Image*>::iterator m_imgs_rit;
-	vector<Image*>::iterator m_imgs_wit;
+	vector<T> m_data;
+	typename vector<T>::iterator m_data_rit;
+	typename vector<T>::iterator m_data_wit;
 };
+
+template <typename T>
+MemRingBuf<T>::MemRingBuf() {
+	lock_guard<mutex> lock(m_lock);
+	m_data.resize(10, nullptr);
+	m_data_wit = m_data.begin();
+	m_data_rit = m_data.begin();
+}
+
+template <typename T>
+T MemRingBuf<T>::get_data() {
+	lock_guard<mutex> lock(m_lock);
+
+	if (m_data_rit == m_data_wit) {
+		return nullptr;
+	}
+
+	T data;
+	data = *m_data_rit;
+
+	++m_data_rit;
+
+	if (m_data_rit == m_data.end())
+		m_data_rit = m_data.begin();
+
+
+	return data;
+}
+
+
+template <typename T>
+void MemRingBuf<T>::set_data(T data) {
+	lock_guard<mutex> lock(m_lock);
+
+	(*m_data_wit) = data;
+
+	++m_data_wit;
+
+	if (m_data_wit == m_data.end())
+		m_data_wit = m_data.begin();
+
+	if (m_data_wit == m_data_rit) {
+		delete *m_data_rit;
+		m_data_rit++;
+
+		if (m_data_rit == m_data.end())
+			m_data_rit = m_data.begin();
+	}
+
+}
+
+template <typename T>
+bool MemRingBuf<T>::empty() {
+	return true;// m_data_rit = m_data_wit ? true : false;
+}
+//class MemImage : public Memory {
+//public:
+//	MemImage();
+//	
+//	void set_image(Image * img);
+//	
+//	Image* get_image();
+//	
+//	long long get_time();
+//	
+//	bool empty();
+//
+//	long long m_wref_count;
+//	long long m_rref_count;
+//
+//private:
+//	vector<Image*> m_imgs;
+//	vector<Image*>::iterator m_imgs_rit;
+//	vector<Image*>::iterator m_imgs_wit;
+//};
+
+typedef MemRingBuf<Image*> MemImage;
