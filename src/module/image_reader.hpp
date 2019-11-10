@@ -21,7 +21,7 @@ protected:
 	string m_path;
 	string m_img_name;
 	
-	MemImage *m_mem_img;
+	MemImages *m_mem_imgs;
 
 	IMG_FMT m_img_fmt;
 
@@ -33,7 +33,7 @@ public:
 		register_string("path", "image path", "C:\\", &m_path);
 		register_string("image_name", "format string representing image name", "%0x6", &m_img_name);
 		//register_string("format", "Image format.", "gray", &m_format_str);
-		register_memory("image", "Image Memory", (Memory**)(&m_mem_img));
+		register_memory("image", "Image Memory", (Memory**)(&m_mem_imgs));
 		register_bool("rev_cols", "Reverse colums order.", false, &m_brev_cols);
 		register_bool("rev_rows", "Reverse rows order.", false, &m_brev_rows);
 		register_bool("transpose", "Transpose image.", false, &m_btranspose);
@@ -53,7 +53,7 @@ public:
 		snprintf(path_and_name, sizeof(path_and_name),
 			path_and_name_format.c_str(), m_id++);
 
-		Image * img;
+		Image * img = nullptr;
 		switch(m_img_fmt) {
 		case IFMT_RGB:
 		case IFMT_RGBA:
@@ -73,7 +73,7 @@ public:
 			if (m_btranspose)
 				img->transpose();
 
-			m_mem_img->set_data(img);
+			m_mem_imgs->set_data(img);
 		}
 
 		if (m_bprint) {

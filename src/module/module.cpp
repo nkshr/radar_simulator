@@ -140,7 +140,7 @@ void Module::processing_loop() {
 				}
 				break;
 			case Module::COMMAND::STOP:
-				m_status !| FLAG_STOPPED;
+				m_status |= FLAG_STOPPED;
 				print(m_name + " " + m_clock->get_info_str() + "\n");
 				m_command = Module::COMMAND::BE_IDLE;
 			case Module::COMMAND::BE_IDLE:

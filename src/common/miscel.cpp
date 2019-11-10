@@ -254,22 +254,13 @@ Image * imread(string &img_name, IMG_FMT fmt) {
 	unsigned w;
 	unsigned h;
 	unsigned d;
-	vector<unsigned char> p;
-	//unsigned error = lodepng_decode_file(&pixs, &w, &h, img_name.c_str(), LCT_GREY, 8);
 	unsigned error;
 	switch (fmt) {
 	case IFMT_RGB:
 	case IFMT_RGBA:
 	case IFMT_GRAY:
-		error = lodepng::decode(p, w, h, img_name.c_str(), LCT_GREY, 8);
+		error = lodepng_decode_file(&pixs, &w, &h, img_name.c_str(), LCT_GREY, 8);
 		break;
-	}
-	//cout << p.size() << endl;
-	/*string wfname = img_name + "xxx.png";
-	error = lodepng::encode(wfname,p, w, h, LCT_GREY);*/
-	unsigned char * temp = new unsigned char[p.size()];
-	for (int i = 0; i < p.size(); ++i) {
-		temp[i] = p[i];
 	}
 	if (error) {
 		cerr << "Error : " << lodepng_error_text(error) << endl;
@@ -279,7 +270,7 @@ Image * imread(string &img_name, IMG_FMT fmt) {
 		d = 1;
 	}
 
-	Image * img = new Image(w, h, d, temp);
+	Image * img = new Image(w, h, d, pixs);
 	return img;
 }
 

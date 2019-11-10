@@ -38,7 +38,7 @@ m_bfinish(false){
 	register_module<SLAMViewer>("slam_viewer");
 
 	register_memory<MemBool>("bool");
-	register_memory<MemImage>("image");
+	register_memory<MemImages>("image");
 
 	//relate command to proccess.
 	register_cmd_proc<CmdLsMod>("lsmod");

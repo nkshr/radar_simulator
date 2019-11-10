@@ -113,7 +113,7 @@ SLAMViewer::SLAMViewer(const string&name, Board * board) : GLFWWindow(name, boar
 
 	register_int("width", "Window width", 1241, &m_width);
 	register_int("height", "Window height", 376, &m_height);
-	register_memory("image", "Source Image for SLAM", (Memory**)(&m_mem_img));
+	register_memory("image", "Source Image for SLAM", (Memory**)(&m_mem_imgs));
 	register_bool("print", "Flag to print information.", false, &m_bprint);
 }
 
@@ -182,10 +182,10 @@ bool SLAMViewer::main_process() {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if (m_mem_img) {
+	if (m_mem_imgs) {
 		if (!m_bpause) {
 			delete m_img;
-			m_img = m_mem_img->get_data();
+			m_img = m_mem_imgs->get_data();
 			m_brev_rows_done = m_brev_cols_done = false;
 		}
 		

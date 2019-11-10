@@ -69,7 +69,7 @@ private:
 	GLuint m_ebo;
 	GLuint m_tex;
 	
-	MemImage * m_mem_img;
+	MemImages * m_mem_imgs;
 	
 	Image * m_img;
 

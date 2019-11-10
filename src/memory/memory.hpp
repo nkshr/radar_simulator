@@ -161,4 +161,4 @@ bool MemRingBuf<T>::empty() {
 //	vector<Image*>::iterator m_imgs_wit;
 //};
 
-typedef MemRingBuf<Image*> MemImage;
+typedef MemRingBuf<Image*> MemImages;
