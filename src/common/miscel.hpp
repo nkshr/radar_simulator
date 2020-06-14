@@ -110,7 +110,7 @@ private:
 	
 	//shared_ptr<unsigned char> m_pixs;
 	
-	unsigned char * m_pixs;
+	shared_ptr<unsigned char>  m_pixs;
 
 	long long m_t;
 
@@ -119,7 +119,7 @@ public:
 	Image(unsigned width, unsigned height, unsigned depth,
 		unsigned char * pixs,long long time = 0);
 	
-	Image(Image &img);
+	Image(const Image &img);
 
 	~Image();
 
@@ -143,12 +143,12 @@ public:
 	void reverse_rows();
 	void reverse_cols();
 
-	Image& operator=(Image & img);
+	//Image& operator=(Image & img);
 
 	Image move();
 };
 
-Image * imread(string &img_name, IMG_FMT fmt = IFMT_RGB);
+Image imread(string &img_name, IMG_FMT fmt = IFMT_RGB);
 
 
 string to_time_string(long long t);

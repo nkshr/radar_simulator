@@ -1,7 +1,8 @@
 #include "memory.hpp"
 
-using std::unique_lock;
-
+using namespace std;
+//using std::unique_lock;
+//using std::lock_guard;
 
 //MemInt::MemInt(int value) {
 //	m_value = value;
@@ -16,12 +17,12 @@ using std::unique_lock;
 //	return m_brom;
 //}
 
-void Memory::lock() {
-	m_lock.lock();
+bool Memory::init() {
+	return true;
 }
 
-void Memory::unlock() {
-	m_lock.unlock();
+bool Memory::finish() {
+	return true;
 }
 
 void MemInt::set_value(int value) {
@@ -60,76 +61,19 @@ string MemBool::get_data() {
 	return "n";
 }
 
-//bool MemString::set_data(const string& data) {
-//	m_string = data;
-//	return true;
-//}
-//
-//void MemString::set_string(const string& str) {
-//	set_data(str);
-//}
+MemRefFrames::MemRefFrames() {
+}
 
-//MemImage::MemImage(): {
-//	m_imgs.resize(10, nullptr);
-//	m_imgs_wit = m_imgs.begin();
-//	m_imgs_rit = m_imgs.begin();
-//}
-//
-//string& MemString::get_string() {
-//	return m_string;
-//}
-//
-//
-//
-//void MemImage::set_image(Image * img) {
-//	lock();
-//	
-//	(*m_imgs_wit) = img;
-//
-//	++m_imgs_wit;
-//
-//	if (m_imgs_wit == m_imgs.end())
-//		m_imgs_wit = m_imgs.begin();
-//
-//	if (m_imgs_wit == m_imgs_rit) {
-//		delete *m_imgs_rit;
-//		m_imgs_rit++;
-//
-//		if (m_imgs_rit == m_imgs.end())
-//			m_imgs_rit = m_imgs.begin();
-//	}
-//
-//	unlock();
-//}
-//
-//Image * MemImage::get_image(){
-//	lock();
-//	
-//	if (m_imgs_rit == m_imgs_wit) {
-//		unlock();
-//		return nullptr;
-//	}
-//
-//	Image * img;
-//	img = *m_imgs_rit;
-//
-//	++m_imgs_rit;
-//
-//	if (m_imgs_rit == m_imgs.end())
-//		m_imgs_rit = m_imgs.begin();
-//
-//	unlock();
-//
-//	return img;
-//}
-//
-//long long MemImage::get_time() {
-//	lock();
-//	Image * img = m_imgs.front();
-//	unlock();
-//	return img->get_time();
-//}
-//
-//bool MemImage::empty() {
-//	return m_imgs_rit == m_imgs_wit ? true : false;
-//}
+
+bool MemRefFrames::init() {
+	vector<RefFrame>::iterator beg = m_data.begin();
+	vector<RefFrame>::iterator end = m_data.end();
+
+	int size_vec_info_3d = m_data.size() - 1;
+
+	for (vector<RefFrame>::iterator it = beg; it != end; ++end) {
+		it->vec_info_3d.resize(size_vec_info_3d);
+	}
+
+	return true;
+}

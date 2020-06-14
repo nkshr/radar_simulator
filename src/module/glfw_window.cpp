@@ -107,9 +107,9 @@ bool GLFWWindow::finish_process() {
 	return true;
 }
 
-SLAMViewer::SLAMViewer(const string&name, Board * board) : GLFWWindow(name, board), m_bprint(false), m_binitialized(false), m_img(nullptr){
-	m_shader.vsname = "C:/cygwin64/home/naoka/github/radar_simulator/src/shader/texture.vs";
-	m_shader.fsname = "C:/cygwin64/home/naoka/github/radar_simulator/src/shader/texture.fs";
+SLAMViewer::SLAMViewer(const string&name, Board * board) : GLFWWindow(name, board), m_bprint(false), m_binitialized(false), m_img(Image()){
+	m_shader.vsname = "C:/Users/naoka/source/repos/nkshr/radar_simulator/src/shader/texture.vs";
+	m_shader.fsname = "C:/Users/naoka/source/repos/nkshr/radar_simulator/src/shader/texture.fs";
 
 	register_int("width", "Window width", 1241, &m_width);
 	register_int("height", "Window height", 376, &m_height);
@@ -184,42 +184,40 @@ bool SLAMViewer::main_process() {
 
 	if (m_mem_imgs) {
 		if (!m_bpause) {
-			delete m_img;
-			m_img = m_mem_imgs->get_data();
+			if (!m_mem_imgs->get_data(m_img))
+				return true;
+			
 			m_brev_rows_done = m_brev_cols_done = false;
 		}
 		
-		if (m_bprint && m_img) {
-			string msg = "time : " + to_string(m_img->get_time()) + '\n';
+		if (m_bprint) {
+			string msg = "time : " + to_string(m_img.get_time()) + '\n';
 			print(msg);
 		};
 	}
 
-	if (m_img) {
-		if ((m_brev_rows &&  !m_brev_rows_done) || (!m_brev_rows && m_brev_rows_done)) {
-			m_img->reverse_rows();
-			m_brev_rows_done = !m_brev_rows_done;
+	if ((m_brev_rows &&  !m_brev_rows_done) || (!m_brev_rows && m_brev_rows_done)) {
+		m_img.reverse_rows();
+		m_brev_rows_done = !m_brev_rows_done;
+	}
 
-		}
+	if (m_brev_cols && !m_brev_cols_done || (!m_brev_cols && m_brev_cols_done)) {
+		m_img.reverse_cols();
+		m_brev_cols_done = !m_brev_cols_done;
+	}
 
-		if (m_brev_cols && !m_brev_cols_done || (!m_brev_cols && m_brev_cols_done)) {
-			m_img->reverse_cols();
-			m_brev_cols_done = !m_brev_cols_done;
-		}
+	int w = m_img.get_width();
+	int h = m_img.get_height();
 
-		int w = m_img->get_width();
-		int h = m_img->get_height();
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED,
-			m_img->get_width(), m_img->get_height(), 0,
-			GL_RED, GL_UNSIGNED_BYTE, m_img->get_pixels());
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED,
+		m_img.get_width(), m_img.get_height(), 0,
+		GL_RED, GL_UNSIGNED_BYTE, m_img.get_pixels());
 		//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
 		//	m_img->get_width(), m_img->get_height(), 0,
 		//	GL_RGBA,GL_UNSIGNED_BYTE, m_img->get_pixels());
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
+	glGenerateMipmap(GL_TEXTURE_2D);
 
 	glUseProgram(m_shader.exe);
 

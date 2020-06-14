@@ -5,8 +5,11 @@
 #include <vector>
 #include <iterator>
 #include  <queue>
+#include  <memory>
 
 #include "../common/miscel.hpp"
+#include "../common/math.hpp"
+#include "../module_base.hpp"
 
 using std::string;
 using std::mutex;
@@ -14,23 +17,21 @@ using std::vector;
 using std::iterator;
 using std::queue;
 
-class Memory {
+class Memory : public ModuleBase{
 public:
 	//virtual bool set_data(const string& value) = 0;
 	//virtual void write(char* buf, int buf_size);
 	//virtual bool read(const char* buf, int buf_size);
 	//virtual string get_data();
+	virtual bool init();
+	virtual bool finish();
 
-	void lock();
-	void unlock();
-
-protected:
-	mutex m_lock;
 
 private:
 	string m_name;
 	bool m_brom;
 };
+
 
 class MemInt : public Memory {
 public:
@@ -76,33 +77,42 @@ public:
 
 	void set_data(T data);
 
-	T get_data();
+	bool get_data(T& dadta);
+
+	bool front(T& data);
+	bool pop(T& data);
+
+	void push(const T& data);
 
 	bool empty();
 
-private:
+protected:
 	vector<T> m_data;
 	typename vector<T>::iterator m_data_rit;
 	typename vector<T>::iterator m_data_wit;
 };
 
 template <typename T>
+void MemRingBuf<T>::push(const T& data) {
+	set_dat(data);
+}
+
+template <typename T>
 MemRingBuf<T>::MemRingBuf() {
 	lock_guard<mutex> lock(m_lock);
-	m_data.resize(10, nullptr);
+	m_data.resize(10);
 	m_data_wit = m_data.begin();
 	m_data_rit = m_data.begin();
 }
 
 template <typename T>
-T MemRingBuf<T>::get_data() {
+bool MemRingBuf<T>::get_data(T& data) {
 	lock_guard<mutex> lock(m_lock);
 
 	if (m_data_rit == m_data_wit) {
-		return nullptr;
+		return false;
 	}
 
-	T data;
 	data = *m_data_rit;
 
 	++m_data_rit;
@@ -111,7 +121,7 @@ T MemRingBuf<T>::get_data() {
 		m_data_rit = m_data.begin();
 
 
-	return data;
+	return true;
 }
 
 
@@ -127,7 +137,7 @@ void MemRingBuf<T>::set_data(T data) {
 		m_data_wit = m_data.begin();
 
 	if (m_data_wit == m_data_rit) {
-		delete *m_data_rit;
+		
 		m_data_rit++;
 
 		if (m_data_rit == m_data.end())
@@ -161,4 +171,23 @@ bool MemRingBuf<T>::empty() {
 //	vector<Image*>::iterator m_imgs_wit;
 //};
 
-typedef MemRingBuf<Image*> MemImages;
+typedef MemRingBuf<Image> MemImages;
+
+
+
+struct RefFrame {
+	Image img;
+	vector<Info3D> vec_info_3d;
+};
+
+class MemRefFrames: public MemRingBuf<RefFrame> {
+public:
+	MemRefFrames();
+
+	virtual bool init();
+	//virtual bool finish();
+
+private:
+
+};
+

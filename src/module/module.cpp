@@ -74,15 +74,16 @@ m_module_id(module_id++){
 	m_clock = m_board->get_clock();
 	register_bool("debug", "debug flag(default no).", false, &m_bdebug);
 
-	//register_double_callback("cf", "clock frequency(default 10.0).",
-	//	[&](double cf) {m_clock->set_clock_freq(cf); return true; },
-	//	[&]() {return m_clock->get_clock_freq(); });
-
 	PortSetCallback psc_cf = [&](const string& cf) {m_clock->set_clock_freq(stod(cf)); return true; };
 	PortGetCallback pgc_cf = [&]() {return to_string(m_clock->get_clock_freq()); };
 	register_callback("cf", "clock frequency(default 10.0)",
 		psc_cf, pgc_cf);
 
+	PortGetCallback pgc_pr= [&]() {
+		return m_clock->get_info_str();
+	};
+	register_callback("proc_rate", "processing rate(read only)",
+		nullptr, pgc_pr);
 }
 
 void Module::init() {
@@ -204,68 +205,6 @@ void Module::print(const string& str) {
 	cout << str;
 }
 
-void Module::register_bool(const string& name, const  string& disc,
-	bool init_status, bool* status, BoolSetCallback sc, BoolGetCallback gc) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->type = Port::TYPE::BOOL;
-
-	*status = init_status;
-	port->data.b = status;
-	port->bsc = sc;
-	port->bgc = gc;
-
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_int(const string& name, const string& disc,
-	int init_val, int* val, IntSetCallback sc, IntGetCallback gc) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->type = Port::TYPE::INT;
-
-	*val = init_val;
-	port->data.i = val;
-
-	port->isc = sc;
-	port->igc = gc;
-
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_double(const string& name, const string& disc,
-	double init_val, double* val, DoubleSetCallback sc, DoubleGetCallback gc) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->type = Port::TYPE::DOUBLE;
-
-	*val = init_val;
-	port->data.d = val;
-
-	port->dsc = sc;
-	port->dgc = gc;
-
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
-
-void Module::register_string(const string& name, const string& disc,
-	string init_str, string* str, StringSetCallback sc, StringGetCallback gc) {
-	Port* port = new Port;
-	port->name = name;
-	port->disc = disc;
-	port->type = Port::TYPE::STRING;
-
-	*str = init_str;
-	port->data.s = str;
-
-	port->ssc = sc;
-	port->sgc = gc;
-
-	m_ports.insert(pair<const string, Port*>(port->name, port));
-}
 
 void Module::register_memory(const string& name, const string& disc, Memory** mem) {
 	Port* port = new Port;
@@ -383,14 +322,6 @@ void Module::get_port_names_and_discs(vector<pair<string, string> >& names_and_d
 	for each(pair<string, Port*> port in m_ports){
 		names_and_discs.push_back(pair<string, string>(port.second->name, port.second->disc));
 	}
-}
-
-void Module::lock() {
-	m_lock.lock();
-}
-
-void Module::unlock() {
-	m_lock.unlock();
 }
 
 void Module::set_time(long long t) {

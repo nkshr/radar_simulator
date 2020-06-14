@@ -133,19 +133,19 @@ int Image::get_depth() {
 }
 
 unsigned char* Image::get_pixels() {
-	return m_pixs;
+	return m_pixs.get();
 }
 
-Image::Image() : m_w(0), m_h(0), m_d(0), m_num_pixs(0), m_pixs(nullptr) {
+Image::Image() : m_w(0), m_h(0), m_d(0), m_num_pixs(0) {
 }
 
 Image::Image(unsigned width, unsigned height, unsigned depth,
 	unsigned char * pixs, long long time) : m_w(width), m_h(height), m_d(depth),
-	m_pixs(pixs), m_t(time) {
+	m_pixs(pixs, default_delete<unsigned char[]>()), m_t(time) {
 	m_num_pixs = m_w * m_h * m_d;
 }
 
-Image::Image(Image & img) {
+Image::Image(const Image & img) {
 	m_w = img.m_w;
 	m_h = img.m_h;
 	m_d = img.m_d;
@@ -166,8 +166,9 @@ Image Image::copy() {
 	img.m_num_pixs = m_num_pixs;
 	
 	//img.m_pixs.reset(new unsigned char[m_num_pixs], default_delete<unsigned char[]>());
+	unsigned char * pixs = new unsigned char[m_num_pixs];
 
-	memcpy((void*)img.m_pixs, (void*)m_pixs, m_num_pixs);
+	memcpy((void*)pixs, (void*)m_pixs.get(), m_num_pixs);
 	return img;
 }
 
@@ -187,61 +188,65 @@ void Image::set_time(long long t) {
 }
 
 void Image::destroy() {
-	delete [] m_pixs;
+	m_pixs.reset((unsigned char*)nullptr, default_delete<unsigned char[]>());
 	m_w = m_h = m_d = m_num_pixs = 0;
 }
 
 void Image::transpose() {
 	unsigned char * temp = new unsigned char [m_num_pixs];
 
+	unsigned char * pixs = m_pixs.get();
 	for (unsigned i = 0; i < m_num_pixs; ++i) {
 		unsigned x = i % m_w;
 		unsigned y = i / m_w;
 		unsigned j = y + x * m_h;
-		temp[j] = m_pixs[i];
+		temp[j] = pixs[i];
 	}
 
-	delete [] m_pixs;
-	m_pixs = temp;
+	m_pixs.reset(temp, default_delete<unsigned char[]>());
 	int temp2 = m_w;
 	m_w = m_h;
-	m_h = m_w;
+	m_h = temp2;
 }
 
 void  Image::reverse_rows() {
 	unsigned half_num_pixs = m_num_pixs / 2;
+	unsigned char * pixs = m_pixs.get();
+
 	for (unsigned i = 0; i < half_num_pixs; ++i) {
 		unsigned x = i % m_w;
 		unsigned y = i / m_w;
 		unsigned j = x  + m_w *(m_h- y -1);
-		unsigned temp = m_pixs[j];
-		m_pixs[j] = m_pixs[i];
-		m_pixs[i] = temp;
+		unsigned temp = pixs[j];
+		pixs[j] = pixs[i];
+		pixs[i] = temp;
 	}
 }
 
 void Image::reverse_cols() {
 	unsigned half_width = m_w / 2;
+	unsigned char * pixs = m_pixs.get();
+
 	for (unsigned i = 0; i < m_num_pixs; ++i) {
 		unsigned x = i % m_w;
 		if (x < half_width) {
 			unsigned y = i / m_w;
 			unsigned j = m_w - x - 1 + m_w * y;
-			unsigned temp = m_pixs[j];
-			m_pixs[j] = m_pixs[i];
-			m_pixs[i] = temp;
+			unsigned temp = pixs[j];
+			pixs[j] = pixs[i];
+			pixs[i] = temp;
 		}
 	}
 }
 
-Image& Image::operator=(Image & img) {
-	m_w = img.m_w;
-	m_h = img.m_h;
-	m_d = img.m_d;
-	m_t = img.m_t;
-	m_pixs = img.m_pixs;
-	return *this;
-}
+//Image& Image::operator=(Image & img) {
+//	m_w = img.m_w;
+//	m_h = img.m_h;
+//	m_d = img.m_d;
+//	m_t = img.m_t;
+//	m_pixs = img.m_pixs;
+//	return *this;
+//}
 
 Image Image::move() {
 	Image img(*this);
@@ -249,7 +254,7 @@ Image Image::move() {
 	return img;
 }
 
-Image * imread(string &img_name, IMG_FMT fmt) {
+Image imread(string &img_name, IMG_FMT fmt) {
 	unsigned char * pixs;
 	unsigned w;
 	unsigned h;
@@ -264,14 +269,13 @@ Image * imread(string &img_name, IMG_FMT fmt) {
 	}
 	if (error) {
 		cerr << "Error : " << lodepng_error_text(error) << endl;
-		return nullptr;
+		return Image();
 	}
 	else {
 		d = 1;
 	}
 
-	Image * img = new Image(w, h, d, pixs);
-	return img;
+	return Image(w, h, d, pixs);
 }
 
 mutex lock_time;
@@ -283,3 +287,4 @@ string to_time_string(long long t) {
 	str[str.size()-1] = '\0';
 	return str;
 }
+
