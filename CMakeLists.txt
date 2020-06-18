@@ -1,21 +1,26 @@
 cmake_minimum_required(VERSION 3.7.0)
 
-project(radar_simulator VERSION 20200329 DESCRIPTION "For VC16")
+project(radar_simulator VERSION 20200329)
 
 
 set(INC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/include)
 
-set(LIB_DIR ${GLFW_LIB_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib)
+set(LIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/lib)
 
-set(GLFW_LIB glfw3.lib)
-set(GLEW_LIBS libglew32d.lib)
-set(OPENGL_LIB opengl32.lib)
+set(GLFW_DEBUG_LIB debug glfw3.lib)
+set(GLFW_RELEASE_LIB optimized glfw3.lib)
 
-set(LODEPNG_INC_DIR lib)
-set(LODEPNG_LIB_DIR lib/lodepng/x64/Debug)
-set(LODEPNG_LIB lodepng.lib)
+set(GLEW_DEBUG_LIBS debug libglew32d.lib debug glew32d.lib)
+set(GLEW_RELEASE_LIBS optimized libglew32.lib optimized glew32.lib)
 
-set(LIBS ${GLFW_LIB} ${GLEW_LIBS} ${OPENGL_LIB} ${LODEPNG_LIB})
+set(OPENGL_DEBUG_LIB debug opengl32.lib)
+set(OPENGL_RELEAE_LIB optimized opengl32.lib)
+
+set(LODEPNG_DEBUG_LIB debug lodepng.lib)
+set(LODEPNG_RELEASE_LIB optimized lodepng.lib)
+
+set(DEBUG_LIBS  ${GLFW_DEBUG_LIB} ${GLEW_DEBUG_LIBS} ${LODEPNG_DEBUG_LIB} ${OPENGL_DEBUG_LIB})
+set(RELEASE_LIBS  ${GLFW_RELEASE_LIB} ${GLEW_RELEASE_LIBS} ${LODEPNG_RELEASE_LIB} ${OPENGL_RELEASE_LIB})
 
 set(COMMON_CPP_FILES
 	src/common/clock.cpp
@@ -79,8 +84,8 @@ include_directories(${INC_DIR})
 link_directories(${LIB_DIR})
 
 add_executable(rsim_server src/server.cpp ${CPP_FILES} ${HPP_FILES})
-target_link_libraries(rsim_server ${LIBS})
+target_link_libraries(rsim_server ${DEBUG_LIBS} ${RELEASE_LIBS})
 
 
 add_executable(rsim src/client.cpp ${CPP_FILES} ${HPP_FILES})
-target_link_libraries(rsim ${LIBS})
+target_link_libraries(rsim ${DEBUG_LIBS} ${RELEASE_LIBS})
